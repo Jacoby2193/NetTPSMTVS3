@@ -11,6 +11,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/StaticMeshComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -56,6 +57,7 @@ ANetTPSMTVSCharacter::ANetTPSMTVSCharacter()
 
 	HandComp = CreateDefaultSubobject<USceneComponent>(TEXT("HandComp"));
 	HandComp->SetupAttachment(GetMesh(), TEXT("PistolPosition"));
+	HandComp->SetRelativeLocationAndRotation(FVector(-16.506365f, 2.893501f, 4.275412f) , FRotator(15.481338f, 82.613271f, 8.578510f));
 }
 
 void ANetTPSMTVSCharacter::BeginPlay()
@@ -67,6 +69,7 @@ void ANetTPSMTVSCharacter::BeginPlay()
 	FName tag = TEXT("Pistol");
 	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld() , AActor::StaticClass() , tag , PistolList);
 }
+
 
 //////////////////////////////////////////////////////////////////////////
 // Input
@@ -139,7 +142,7 @@ void ANetTPSMTVSCharacter::Look(const FInputActionValue& Value)
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
 }
-
+AActor* tempOwner;
 void ANetTPSMTVSCharacter::GrabPistol(const FInputActionValue& Value)
 {
 	if ( bHasPistol )
@@ -150,6 +153,37 @@ void ANetTPSMTVSCharacter::GrabPistol(const FInputActionValue& Value)
 	else
 	{
 		// 총을 잡지 않은 상태 -> 잡고싶다.
-		bHasPistol = true;
+		// 총목록을 검사하고싶다.
+		for ( AActor* pistol : PistolList )
+		{
+			// 나와 총과의 거리가 GrabDistance 이하라면
+			// 그 중에 소유자가 없는 총이라면
+			float tempDist = GetDistanceTo(pistol);
+			if ( tempDist > GrabDistance)
+				continue;
+			if ( nullptr != pistol->GetOwner())
+				continue;
+
+			// 그 총을 기억하고싶다. (GrabPistolActor)
+			GrabPistolActor = pistol;
+			// 잡은총의 소유자를 나로 하고싶다. -> 액터의 오너는 플레이어 컨트롤러이다.
+			pistol->SetOwner(this);
+			bHasPistol = true;
+
+			tempOwner = pistol->GetOwner();
+
+			// 총액터를 HandComp에 붙이고싶다.
+			AttachPistol(GrabPistolActor);
+			break;
+		}
+		
 	}
+}
+
+void ANetTPSMTVSCharacter::AttachPistol(AActor* pistolActor)
+{
+	GrabPistolActor = pistolActor;
+	auto* mesh = GrabPistolActor->GetComponentByClass<UStaticMeshComponent>();
+	mesh->SetSimulatePhysics(false);
+	mesh->AttachToComponent(HandComp , FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 }
