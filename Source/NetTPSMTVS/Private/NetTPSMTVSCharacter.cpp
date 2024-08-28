@@ -10,6 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -53,14 +54,18 @@ ANetTPSMTVSCharacter::ANetTPSMTVSCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+	HandComp = CreateDefaultSubobject<USceneComponent>(TEXT("HandComp"));
+	HandComp->SetupAttachment(GetMesh(), TEXT("PistolPosition"));
 }
 
 void ANetTPSMTVSCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+
+	// 태어날 때 모든 총 목록을 기억하고싶다.
+	FName tag = TEXT("Pistol");
+	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld() , AActor::StaticClass() , tag , PistolList);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -89,6 +94,9 @@ void ANetTPSMTVSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ANetTPSMTVSCharacter::Look);
+
+		EnhancedInputComponent->BindAction(GrabPistolAction, ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::GrabPistol);
+
 	}
 	else
 	{
@@ -129,5 +137,19 @@ void ANetTPSMTVSCharacter::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
+
+void ANetTPSMTVSCharacter::GrabPistol(const FInputActionValue& Value)
+{
+	if ( bHasPistol )
+	{
+		// 총을 이미 잡은 상태 -> 놓고싶다.
+		bHasPistol = false;
+	}
+	else
+	{
+		// 총을 잡지 않은 상태 -> 잡고싶다.
+		bHasPistol = true;
 	}
 }

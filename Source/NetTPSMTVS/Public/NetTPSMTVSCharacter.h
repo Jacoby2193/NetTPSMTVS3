@@ -44,6 +44,10 @@ class ANetTPSMTVSCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* GrabPistolAction;
+
+
 public:
 	ANetTPSMTVSCharacter();
 	
@@ -56,6 +60,7 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 			
+	void GrabPistol(const FInputActionValue& Value);
 
 protected:
 	// APawn interface
@@ -73,5 +78,13 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	bool bHasPistol;
+
+	// 태어날 때 모든 총 목록을 기억하고싶다.
+	UPROPERTY()
+	TArray<AActor*> PistolList;
+
+	// 총을 잡았을 때 위치
+	UPROPERTY(EditDefaultsOnly)
+	class USceneComponent* HandComp;
 };
 
