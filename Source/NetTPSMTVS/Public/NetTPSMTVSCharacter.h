@@ -20,6 +20,7 @@ class ANetTPSMTVSCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
+private:
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere , BlueprintReadOnly , Category = Camera , meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
@@ -47,6 +48,8 @@ class ANetTPSMTVSCharacter : public ACharacter
 	UPROPERTY(EditAnywhere , BlueprintReadOnly , Category = Input , meta = (AllowPrivateAccess = "true"))
 	UInputAction* GrabPistolAction;
 
+	UPROPERTY(EditAnywhere , BlueprintReadOnly , Category = Input , meta = (AllowPrivateAccess = "true"))
+	UInputAction* FireAction;
 
 public:
 	ANetTPSMTVSCharacter();
@@ -61,6 +64,14 @@ protected:
 	void Look(const FInputActionValue& Value);
 
 	void GrabPistol(const FInputActionValue& Value);
+
+	void FirePistol(const FInputActionValue& Value);
+
+
+	void MyTakePistol();
+	void MyReleasePistol();
+
+
 
 protected:
 	// APawn interface
@@ -95,5 +106,13 @@ public:
 	float GrabDistance = 300;
 
 	void AttachPistol(AActor* pistolActor);
+
+	void DetachPistol();
+
+
+	// 만약 마우스 왼쪽 버튼을 누르면 총을쏘고싶다.
+	// 부딪힌곳에 총알자국을 표현하고싶다.
+	UPROPERTY(EditDefaultsOnly , Category = Pistol)
+	class UParticleSystem* BulletImpactVFX;
 };
 

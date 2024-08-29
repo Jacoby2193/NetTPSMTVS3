@@ -99,6 +99,8 @@ void ANetTPSMTVSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ANetTPSMTVSCharacter::Look);
 
 		EnhancedInputComponent->BindAction(GrabPistolAction, ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::GrabPistol);
+		
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::FirePistol);
 
 	}
 	else
@@ -147,36 +149,58 @@ void ANetTPSMTVSCharacter::GrabPistol(const FInputActionValue& Value)
 {
 	if ( bHasPistol )
 	{
-		// 총을 이미 잡은 상태 -> 놓고싶다.
-		bHasPistol = false;
+		MyReleasePistol();
 	}
 	else
 	{
-		// 총을 잡지 않은 상태 -> 잡고싶다.
-		// 총목록을 검사하고싶다.
-		for ( AActor* pistol : PistolList )
-		{
-			// 나와 총과의 거리가 GrabDistance 이하라면
-			// 그 중에 소유자가 없는 총이라면
-			float tempDist = GetDistanceTo(pistol);
-			if ( tempDist > GrabDistance)
-				continue;
-			if ( nullptr != pistol->GetOwner())
-				continue;
+		MyTakePistol();
+	}
+}
 
-			// 그 총을 기억하고싶다. (GrabPistolActor)
-			GrabPistolActor = pistol;
-			// 잡은총의 소유자를 나로 하고싶다. -> 액터의 오너는 플레이어 컨트롤러이다.
-			pistol->SetOwner(this);
-			bHasPistol = true;
+void ANetTPSMTVSCharacter::MyTakePistol()
+{
+	// 총을 잡지 않은 상태 -> 잡고싶다.
+			// 총목록을 검사하고싶다.
+	for ( AActor* pistol : PistolList )
+	{
+		// 나와 총과의 거리가 GrabDistance 이하라면
+		// 그 중에 소유자가 없는 총이라면
+		float tempDist = GetDistanceTo(pistol);
+		if ( tempDist > GrabDistance )
+			continue;
+		if ( nullptr != pistol->GetOwner() )
+			continue;
 
-			tempOwner = pistol->GetOwner();
+		// 그 총을 기억하고싶다. (GrabPistolActor)
+		GrabPistolActor = pistol;
+		// 잡은총의 소유자를 나로 하고싶다. -> 액터의 오너는 플레이어 컨트롤러이다.
+		pistol->SetOwner(this);
+		bHasPistol = true;
 
-			// 총액터를 HandComp에 붙이고싶다.
-			AttachPistol(GrabPistolActor);
-			break;
-		}
-		
+		tempOwner = pistol->GetOwner();
+
+		// 총액터를 HandComp에 붙이고싶다.
+		AttachPistol(GrabPistolActor);
+		break;
+	}
+}
+
+void ANetTPSMTVSCharacter::MyReleasePistol()
+{
+	// 총을 이미 잡은 상태 -> 놓고싶다.
+	if ( bHasPistol )
+	{
+		bHasPistol = false;
+	}
+
+	// 총의 오너를 취소하고싶다.
+	if ( GrabPistolActor )
+	{
+		DetachPistol();
+
+		GrabPistolActor->SetOwner(nullptr);
+		// 총을 잊고싶다.
+		GrabPistolActor = nullptr;
 	}
 }
 
@@ -184,6 +208,49 @@ void ANetTPSMTVSCharacter::AttachPistol(AActor* pistolActor)
 {
 	GrabPistolActor = pistolActor;
 	auto* mesh = GrabPistolActor->GetComponentByClass<UStaticMeshComponent>();
-	mesh->SetSimulatePhysics(false);
-	mesh->AttachToComponent(HandComp , FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	check(mesh);
+	if ( mesh )
+	{
+		mesh->SetSimulatePhysics(false);
+		mesh->AttachToComponent(HandComp , FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	}
 }
+
+void ANetTPSMTVSCharacter::DetachPistol()
+{
+	// 총의 메쉬를 가져와서
+	auto* mesh = GrabPistolActor->GetComponentByClass<UStaticMeshComponent>();
+	check(mesh);
+	if ( mesh )
+	{
+		// 물리를 켜주고싶다.
+		mesh->SetSimulatePhysics(true);
+		// 분리하고싶다..
+		mesh->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+	}
+}
+
+void ANetTPSMTVSCharacter::FirePistol(const FInputActionValue& Value)
+{
+	if ( false == bHasPistol )
+		return;
+
+	// 카메라 위치에서 카메라 앞 방향으로 1Km 선을 쏘고싶다.
+	FVector start = FollowCamera->GetComponentLocation();
+	FVector end = start + FollowCamera->GetForwardVector() * 100000.f;
+	FHitResult hitInfo;
+	FCollisionQueryParams params;
+	params.AddIgnoredActor(this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo , start , end , ECC_Visibility , params);
+	// 만약 부딪힌것이 있다면
+	if (bHit)
+	{
+		// 그곳에 BulletImpactVFX를 생성해서 배치하고싶다.
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld() , BulletImpactVFX , hitInfo.ImpactPoint);
+	}
+
+
+}
+
+
