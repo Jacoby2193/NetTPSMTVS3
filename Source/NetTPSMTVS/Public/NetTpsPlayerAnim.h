@@ -31,6 +31,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float Vertical;		// Speed
 
+	UPROPERTY(EditDefaultsOnly)
+	class UAnimMontage* FireMontage;
+
+	void PlayFireMontage();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float PitchAngle;
+
+
 
 	
 };

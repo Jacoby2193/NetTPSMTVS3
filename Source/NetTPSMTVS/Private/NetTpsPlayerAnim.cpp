@@ -27,4 +27,14 @@ void UNetTpsPlayerAnim::NativeUpdateAnimation(float DeltaSeconds)
 	Vertical = FVector::DotProduct(vel , forward);	// 앞뒤
 
 	bHasPistol = Me->bHasPistol;
+
+	PitchAngle = -Me->GetBaseAimRotation().Pitch;
+}
+
+void UNetTpsPlayerAnim::PlayFireMontage()
+{
+	if (bHasPistol && FireMontage)
+	{
+		Montage_Play(FireMontage);
+	}
 }

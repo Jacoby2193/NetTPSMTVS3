@@ -12,6 +12,7 @@
 #include "InputActionValue.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/StaticMeshComponent.h"
+#include "NetTpsPlayerAnim.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -234,6 +235,13 @@ void ANetTPSMTVSCharacter::FirePistol(const FInputActionValue& Value)
 {
 	if ( false == bHasPistol )
 		return;
+
+	// Fire몽타주를 재생하고싶다.
+	auto* anim = CastChecked<UNetTpsPlayerAnim>(GetMesh()->GetAnimInstance());
+	if ( anim ){
+		anim->PlayFireMontage();
+	}
+
 
 	// 카메라 위치에서 카메라 앞 방향으로 1Km 선을 쏘고싶다.
 	FVector start = FollowCamera->GetComponentLocation();
