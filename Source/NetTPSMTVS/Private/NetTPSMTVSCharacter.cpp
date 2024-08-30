@@ -13,6 +13,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/StaticMeshComponent.h"
 #include "NetTpsPlayerAnim.h"
+#include "MainWidget.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -22,8 +23,8 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 ANetTPSMTVSCharacter::ANetTPSMTVSCharacter()
 {
 	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-		
+	GetCapsuleComponent()->InitCapsuleSize(42.f , 96.0f);
+
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -32,7 +33,7 @@ ANetTPSMTVSCharacter::ANetTPSMTVSCharacter()
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = false; // Character moves in the direction of input...	
 	GetCharacterMovement()->bUseControllerDesiredRotation = true; // Character moves in the direction of input...	
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
+	GetCharacterMovement()->RotationRate = FRotator(0.0f , 500.0f , 0.0f); // ...at this rotation rate
 
 	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
 	// instead of recompiling to adjust them
@@ -53,12 +54,12 @@ ANetTPSMTVSCharacter::ANetTPSMTVSCharacter()
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
+	FollowCamera->SetupAttachment(CameraBoom , USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 	HandComp = CreateDefaultSubobject<USceneComponent>(TEXT("HandComp"));
-	HandComp->SetupAttachment(GetMesh(), TEXT("PistolPosition"));
-	HandComp->SetRelativeLocationAndRotation(FVector(-16.506365f, 2.893501f, 4.275412f) , FRotator(15.481338f, 82.613271f, 8.578510f));
+	HandComp->SetupAttachment(GetMesh() , TEXT("PistolPosition"));
+	HandComp->SetRelativeLocationAndRotation(FVector(-16.506365f , 2.893501f , 4.275412f) , FRotator(15.481338f , 82.613271f , 8.578510f));
 }
 
 void ANetTPSMTVSCharacter::BeginPlay()
@@ -69,6 +70,8 @@ void ANetTPSMTVSCharacter::BeginPlay()
 	// 태어날 때 모든 총 목록을 기억하고싶다.
 	FName tag = TEXT("Pistol");
 	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld() , AActor::StaticClass() , tag , PistolList);
+
+	InitMainUI();
 }
 
 
@@ -78,35 +81,35 @@ void ANetTPSMTVSCharacter::BeginPlay()
 void ANetTPSMTVSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	if ( APlayerController* PlayerController = Cast<APlayerController>(GetController()) )
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		if ( UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()) )
 		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			Subsystem->AddMappingContext(DefaultMappingContext , 0);
 		}
 	}
-	
+
 	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
+	if ( UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent) ) {
+
 		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		EnhancedInputComponent->BindAction(JumpAction , ETriggerEvent::Started , this , &ACharacter::Jump);
+		EnhancedInputComponent->BindAction(JumpAction , ETriggerEvent::Completed , this , &ACharacter::StopJumping);
 
 		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ANetTPSMTVSCharacter::Move);
+		EnhancedInputComponent->BindAction(MoveAction , ETriggerEvent::Triggered , this , &ANetTPSMTVSCharacter::Move);
 
 		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ANetTPSMTVSCharacter::Look);
+		EnhancedInputComponent->BindAction(LookAction , ETriggerEvent::Triggered , this , &ANetTPSMTVSCharacter::Look);
 
-		EnhancedInputComponent->BindAction(GrabPistolAction, ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::GrabPistol);
-		
-		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::FirePistol);
+		EnhancedInputComponent->BindAction(GrabPistolAction , ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::GrabPistol);
+
+		EnhancedInputComponent->BindAction(FireAction , ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::FirePistol);
 
 	}
 	else
 	{
-		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+		UE_LOG(LogTemplateCharacter , Error , TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file.") , *GetNameSafe(this));
 	}
 }
 
@@ -115,21 +118,21 @@ void ANetTPSMTVSCharacter::Move(const FInputActionValue& Value)
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
-	if (Controller != nullptr)
+	if ( Controller != nullptr )
 	{
 		// find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
+		const FRotator YawRotation(0 , Rotation.Yaw , 0);
 
 		// get forward vector
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	
+
 		// get right vector 
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
 		// add movement 
-		AddMovementInput(ForwardDirection, MovementVector.Y);
-		AddMovementInput(RightDirection, MovementVector.X);
+		AddMovementInput(ForwardDirection , MovementVector.Y);
+		AddMovementInput(RightDirection , MovementVector.X);
 	}
 }
 
@@ -138,7 +141,7 @@ void ANetTPSMTVSCharacter::Look(const FInputActionValue& Value)
 	// input is a Vector2D
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-	if (Controller != nullptr)
+	if ( Controller != nullptr )
 	{
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
@@ -160,6 +163,9 @@ void ANetTPSMTVSCharacter::GrabPistol(const FInputActionValue& Value)
 
 void ANetTPSMTVSCharacter::MyTakePistol()
 {
+	if ( MainUI )
+		MainUI->SetActivePistolUI(true);
+
 	// 총을 잡지 않은 상태 -> 잡고싶다.
 			// 총목록을 검사하고싶다.
 	for ( AActor* pistol : PistolList )
@@ -188,6 +194,9 @@ void ANetTPSMTVSCharacter::MyTakePistol()
 
 void ANetTPSMTVSCharacter::MyReleasePistol()
 {
+	if (MainUI)
+		MainUI->SetActivePistolUI(false);
+	
 	// 총을 이미 잡은 상태 -> 놓고싶다.
 	if ( bHasPistol )
 	{
@@ -236,9 +245,20 @@ void ANetTPSMTVSCharacter::FirePistol(const FInputActionValue& Value)
 	if ( false == bHasPistol )
 		return;
 
+	// 만약 총알이 없다면 바로 종료
+	if ( BulletCount <= 0 )
+		return;
+
+	// 총알 1발 감소하고 UI에 반영하고 싶다.
+	BulletCount--;
+	if ( MainUI )
+		MainUI->RemoveBulletUI();
+
+
+
 	// Fire몽타주를 재생하고싶다.
 	auto* anim = CastChecked<UNetTpsPlayerAnim>(GetMesh()->GetAnimInstance());
-	if ( anim ){
+	if ( anim ) {
 		anim->PlayFireMontage();
 	}
 
@@ -252,13 +272,21 @@ void ANetTPSMTVSCharacter::FirePistol(const FInputActionValue& Value)
 
 	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo , start , end , ECC_Visibility , params);
 	// 만약 부딪힌것이 있다면
-	if (bHit)
+	if ( bHit )
 	{
 		// 그곳에 BulletImpactVFX를 생성해서 배치하고싶다.
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld() , BulletImpactVFX , hitInfo.ImpactPoint);
 	}
-
-
 }
 
+void ANetTPSMTVSCharacter::InitMainUI()
+{
+	MainUI = CastChecked<UMainWidget>(CreateWidget(GetWorld() , MainUIFactory));
+	if ( MainUI )
+	{
+		MainUI->AddToViewport();
+		MainUI->SetActivePistolUI(false);
+		MainUI->InitBulletUI(MaxBulletCount);
+	}
+}
 
