@@ -15,6 +15,8 @@
 #include "NetTpsPlayerAnim.h"
 #include "MainWidget.h"
 #include "Components/WidgetComponent.h"
+#include "HealthBar.h"
+#include "GameFramework/PlayerController.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -286,6 +288,13 @@ void ANetTPSMTVSCharacter::FirePistol(const FInputActionValue& Value)
 	{
 		// 그곳에 BulletImpactVFX를 생성해서 배치하고싶다.
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld() , BulletImpactVFX , hitInfo.ImpactPoint);
+
+		// 맞은 대상이 상대방일 경우 데미지 처리
+		auto* otherPlayer = Cast<ANetTPSMTVSCharacter>(hitInfo.GetActor());
+		if ( otherPlayer )
+		{
+			otherPlayer->DamageProcess();
+		}
 	}
 }
 
@@ -307,6 +316,13 @@ void ANetTPSMTVSCharacter::ReloadPistol(const FInputActionValue& Value)
 
 void ANetTPSMTVSCharacter::InitMainUI()
 {
+	// Player가 제어중이 아니라면 처리하지 않는다.
+	auto* pc = Cast<APlayerController>(Controller);
+	if ( nullptr == pc )
+	{
+		return;
+	}
+
 	MainUI = CastChecked<UMainWidget>(CreateWidget(GetWorld() , MainUIFactory));
 	if ( MainUI )
 	{
@@ -332,5 +348,41 @@ void ANetTPSMTVSCharacter::InitBulletUI()
 
 	// 재장전 완료상태 처리
 	IsReloading = false;
+}
+
+float ANetTPSMTVSCharacter::GetHP()
+{
+	return hp;
+}
+
+void ANetTPSMTVSCharacter::SetHP(float value)
+{
+	hp = value;
+
+	// UI에 할당할 퍼센트 계산
+	float percent = hp / MaxHP;
+
+	if (MainUI)
+	{
+		MainUI->HP = percent;
+	}
+	else
+	{
+		// MainUI가 없을때는 다른 플레이어다. HPUIComp에 적용해주자
+		auto* hpUI = Cast<UHealthBar>(HPUIComp->GetWidget());
+		hpUI->HP = percent;
+	}
+}
+
+void ANetTPSMTVSCharacter::DamageProcess()
+{
+	// 체력을 감소시킨다.
+	HP--;
+	
+	// 죽음처리
+	if (HP <= 0)
+	{
+		IsDead = true;
+	}
 }
 

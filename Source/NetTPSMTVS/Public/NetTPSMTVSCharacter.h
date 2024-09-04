@@ -143,11 +143,20 @@ public:
 
 	// 현재 체력
 	UPROPERTY(BlueprintReadOnly , Category = HP)
-	float HP = MaxHP;
+	float hp = MaxHP;
 
-	UPROPERTY(VisibleAnywhere, Category = HP)
+	__declspec(property(get=GetHP, put=SetHP)) float HP;
+
+	float GetHP();
+	void SetHP(float value);
+
+	UPROPERTY(VisibleAnywhere , Category = HP)
 	class UWidgetComponent* HPUIComp;
 
+	// 피격처리
+	void DamageProcess();
+
+	bool IsDead;
 
 };
 
