@@ -38,3 +38,17 @@ void UNetTpsPlayerAnim::PlayFireMontage()
 		Montage_Play(FireMontage);
 	}
 }
+
+void UNetTpsPlayerAnim::PlayReloadMontage()
+{
+	if ( bHasPistol && ReloadMontage )
+	{
+		Montage_Play(ReloadMontage);
+	}
+}
+
+void UNetTpsPlayerAnim::AnimNotify_OnMyReloadFinish()
+{
+	// 총알UI 초기화 시켜준다.
+	Me->InitBulletUI();
+}

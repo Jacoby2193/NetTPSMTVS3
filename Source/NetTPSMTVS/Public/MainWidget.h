@@ -7,19 +7,19 @@
 #include "MainWidget.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class NETTPSMTVS_API UMainWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
+
 public:
 	// Crosshair이미지를 바인딩 하고싶다.
-	UPROPERTY(meta=(BindWidget))
+	UPROPERTY(meta = (BindWidget))
 	class UImage* ImageCrosshair;
-	
-	UPROPERTY(meta=(BindWidget))
+
+	UPROPERTY(meta = (BindWidget))
 	class UUniformGridPanel* BulletPanel;
 
 	UPROPERTY(EditDefaultsOnly)
@@ -32,6 +32,8 @@ public:
 	// 총알UI 차감
 	void RemoveBulletUI();
 
+	void RemoveAllBulletUI();
+
 	// 주인공이 태어날 때 UMainWidget을 만들어서 가지고 있고싶다.
 
 	// Crosshair이미지를 켜고 끄는 기능을 만들고
@@ -39,4 +41,9 @@ public:
 	// 총을 잡으면 켜고
 	// 총을 놓으면 끄고싶다.
 
+	UPROPERTY(EditDefaultsOnly , BlueprintReadWrite , Category = HP)
+	float HP = 1.0f;
+
+	UPROPERTY(meta=(BindWidget))
+	class UProgressBar* HealthBar;
 };

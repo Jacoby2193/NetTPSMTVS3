@@ -14,6 +14,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "NetTpsPlayerAnim.h"
 #include "MainWidget.h"
+#include "Components/WidgetComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -60,6 +61,9 @@ ANetTPSMTVSCharacter::ANetTPSMTVSCharacter()
 	HandComp = CreateDefaultSubobject<USceneComponent>(TEXT("HandComp"));
 	HandComp->SetupAttachment(GetMesh() , TEXT("PistolPosition"));
 	HandComp->SetRelativeLocationAndRotation(FVector(-16.506365f , 2.893501f , 4.275412f) , FRotator(15.481338f , 82.613271f , 8.578510f));
+
+	HPUIComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBar"));
+	HPUIComp->SetupAttachment(GetMesh());
 }
 
 void ANetTPSMTVSCharacter::BeginPlay()
@@ -105,6 +109,8 @@ void ANetTPSMTVSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(GrabPistolAction , ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::GrabPistol);
 
 		EnhancedInputComponent->BindAction(FireAction , ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::FirePistol);
+
+		EnhancedInputComponent->BindAction(ReloadAction , ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::ReloadPistol);
 
 	}
 	else
@@ -163,9 +169,6 @@ void ANetTPSMTVSCharacter::GrabPistol(const FInputActionValue& Value)
 
 void ANetTPSMTVSCharacter::MyTakePistol()
 {
-	if ( MainUI )
-		MainUI->SetActivePistolUI(true);
-
 	// 총을 잡지 않은 상태 -> 잡고싶다.
 			// 총목록을 검사하고싶다.
 	for ( AActor* pistol : PistolList )
@@ -177,6 +180,9 @@ void ANetTPSMTVSCharacter::MyTakePistol()
 			continue;
 		if ( nullptr != pistol->GetOwner() )
 			continue;
+
+		if ( MainUI )
+			MainUI->SetActivePistolUI(true);
 
 		// 그 총을 기억하고싶다. (GrabPistolActor)
 		GrabPistolActor = pistol;
@@ -194,9 +200,15 @@ void ANetTPSMTVSCharacter::MyTakePistol()
 
 void ANetTPSMTVSCharacter::MyReleasePistol()
 {
-	if (MainUI)
-		MainUI->SetActivePistolUI(false);
+	// 총을 잡고 있지 않거나 재장전 중이면 총을 버릴 수 없다.
+	if ( false == bHasPistol || IsReloading )
+		return;
 	
+	if ( MainUI )
+	{
+		MainUI->SetActivePistolUI(false);
+	}
+
 	// 총을 이미 잡은 상태 -> 놓고싶다.
 	if ( bHasPistol )
 	{
@@ -242,7 +254,7 @@ void ANetTPSMTVSCharacter::DetachPistol()
 
 void ANetTPSMTVSCharacter::FirePistol(const FInputActionValue& Value)
 {
-	if ( false == bHasPistol )
+	if ( false == bHasPistol || true == IsReloading || nullptr == GrabPistolActor )
 		return;
 
 	// 만약 총알이 없다면 바로 종료
@@ -254,14 +266,12 @@ void ANetTPSMTVSCharacter::FirePistol(const FInputActionValue& Value)
 	if ( MainUI )
 		MainUI->RemoveBulletUI();
 
-
-
 	// Fire몽타주를 재생하고싶다.
 	auto* anim = CastChecked<UNetTpsPlayerAnim>(GetMesh()->GetAnimInstance());
-	if ( anim ) {
+	if ( anim )
+	{
 		anim->PlayFireMontage();
 	}
-
 
 	// 카메라 위치에서 카메라 앞 방향으로 1Km 선을 쏘고싶다.
 	FVector start = FollowCamera->GetComponentLocation();
@@ -279,6 +289,22 @@ void ANetTPSMTVSCharacter::FirePistol(const FInputActionValue& Value)
 	}
 }
 
+void ANetTPSMTVSCharacter::ReloadPistol(const FInputActionValue& Value)
+{
+	// 총 소지중이 아니거나 재장전 중이라면 아무 처리 하지 않는다.
+	if ( !bHasPistol || IsReloading )
+	{
+		return;
+	}
+
+	auto* anim = Cast<UNetTpsPlayerAnim>(GetMesh()->GetAnimInstance());
+	if ( anim )
+	{
+		IsReloading = true;
+		anim->PlayReloadMontage();
+	}
+}
+
 void ANetTPSMTVSCharacter::InitMainUI()
 {
 	MainUI = CastChecked<UMainWidget>(CreateWidget(GetWorld() , MainUIFactory));
@@ -288,5 +314,23 @@ void ANetTPSMTVSCharacter::InitMainUI()
 		MainUI->SetActivePistolUI(false);
 		MainUI->InitBulletUI(MaxBulletCount);
 	}
+}
+
+void ANetTPSMTVSCharacter::InitBulletUI()
+{
+	BulletCount = MaxBulletCount;
+	if ( MainUI )
+	{
+		MainUI->RemoveAllBulletUI();
+
+		//MainUI->InitBulletUI(MaxBulletCount);
+		for ( int32 i = 0; i < MaxBulletCount; i++ )
+		{
+			MainUI->AddBulletUI();
+		}
+	}
+
+	// 재장전 완료상태 처리
+	IsReloading = false;
 }
 

@@ -39,7 +39,13 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float PitchAngle;
 
+	UPROPERTY(EditDefaultsOnly)
+	class UAnimMontage* ReloadMontage;
 
+	void PlayReloadMontage();
+
+	UFUNCTION()
+	void AnimNotify_OnMyReloadFinish();
 
 	
 };

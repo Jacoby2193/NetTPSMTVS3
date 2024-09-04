@@ -51,6 +51,9 @@ private:
 	UPROPERTY(EditAnywhere , BlueprintReadOnly , Category = Input , meta = (AllowPrivateAccess = "true"))
 	UInputAction* FireAction;
 
+	UPROPERTY(EditAnywhere , BlueprintReadOnly , Category = Input , meta = (AllowPrivateAccess = "true"))
+	UInputAction* ReloadAction;
+
 public:
 	ANetTPSMTVSCharacter();
 
@@ -67,6 +70,7 @@ protected:
 
 	void FirePistol(const FInputActionValue& Value);
 
+	void ReloadPistol(const FInputActionValue& Value);
 
 	void MyTakePistol();
 	void MyReleasePistol();
@@ -116,17 +120,34 @@ public:
 	class UParticleSystem* BulletImpactVFX;
 
 	// MainWidget을 생성해서 기억하고싶다.
-	 UPROPERTY(EditDefaultsOnly , Category = Pistol)
-	 TSubclassOf<class UUserWidget> MainUIFactory;
+	UPROPERTY(EditDefaultsOnly , Category = Pistol)
+	TSubclassOf<class UUserWidget> MainUIFactory;
 
-	 UPROPERTY()
-	 class UMainWidget* MainUI;
+	UPROPERTY()
+	class UMainWidget* MainUI;
 
-	 void InitMainUI();
+	void InitMainUI();
 
-	 UPROPERTY(EditDefaultsOnly , Category = Pistol)
-	 int32 MaxBulletCount = 10;
+	// 총알 UI 초기화 함수
+	void InitBulletUI();
+	// 재장전 중인지 기억
+	bool IsReloading;
 
-	 int32 BulletCount = MaxBulletCount;
+	UPROPERTY(EditDefaultsOnly , Category = Pistol)
+	int32 MaxBulletCount = 10;
+	int32 BulletCount = MaxBulletCount;
+
+	// 플레이어 체력 Max
+	UPROPERTY(EditDefaultsOnly , BlueprintReadOnly , Category = HP)
+	float MaxHP = 3;
+
+	// 현재 체력
+	UPROPERTY(BlueprintReadOnly , Category = HP)
+	float HP = MaxHP;
+
+	UPROPERTY(VisibleAnywhere, Category = HP)
+	class UWidgetComponent* HPUIComp;
+
+
 };
 

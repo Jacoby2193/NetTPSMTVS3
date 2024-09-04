@@ -30,6 +30,14 @@ void UMainWidget::RemoveBulletUI()
 	BulletPanel->RemoveChildAt(BulletPanel->GetChildrenCount() - 1);
 }
 
+void UMainWidget::RemoveAllBulletUI()
+{
+	for ( UWidget* bulletWidget : BulletPanel->GetAllChildren() )
+	{
+		BulletPanel->RemoveChild(bulletWidget);
+	}
+}
+
 void UMainWidget::SetActivePistolUI(bool value)
 {
 	if (value)
