@@ -10,8 +10,8 @@ UCLASS()
 class NETTPSMTVS_API ANetActor : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	ANetActor();
 
@@ -19,7 +19,10 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+public:
+	FTimerHandle handle;
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -32,5 +35,25 @@ public:
 
 	// Owner 검출 영역
 	UPROPERTY(EditDefaultsOnly)
-	float searchDistance = 200;
+	float SearchDistance = 200;
+
+	// Owner 설정
+	void FindOwner();
+
+	// 회전 값 동기화 변수
+	UPROPERTY(ReplicatedUsing = OnRep_RotYaw)
+	float RotYaw;
+
+	UFUNCTION()
+	void OnRep_RotYaw();
+
+	UPROPERTY()
+	class UMaterialInstanceDynamic* Mat;
+
+	// 재질에 동기화될 색상
+	UPROPERTY(ReplicatedUsing = OnRep_ChangeMatColor)
+	FLinearColor MatColor;
+	
+	UFUNCTION()
+	void OnRep_ChangeMatColor();
 };
