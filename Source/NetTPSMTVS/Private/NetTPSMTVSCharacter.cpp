@@ -17,6 +17,7 @@
 #include "Components/WidgetComponent.h"
 #include "HealthBar.h"
 #include "GameFramework/PlayerController.h"
+#include "NetTPSMTVS.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -25,6 +26,8 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 ANetTPSMTVSCharacter::ANetTPSMTVSCharacter()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f , 96.0f);
 
@@ -78,6 +81,13 @@ void ANetTPSMTVSCharacter::BeginPlay()
 	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld() , AActor::StaticClass() , tag , PistolList);
 
 	InitMainUI();
+}
+
+void ANetTPSMTVSCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	PrintNetLog();
 }
 
 
@@ -384,5 +394,15 @@ void ANetTPSMTVSCharacter::DamageProcess()
 	{
 		IsDead = true;
 	}
+}
+
+void ANetTPSMTVSCharacter::PrintNetLog()
+{
+	const FString conStr = GetNetConnection() ? TEXT("Valid Connection") : TEXT("Invalid Connection");
+	const FString ownerName = GetOwner() ? GetOwner()->GetName() : TEXT("No Owner");
+
+	FString logStr = FString::Printf(TEXT("Connection : %s\nOwner Name : %s\nLocal Role : %s\nRemote Role : %s") , *conStr , *ownerName, *LOCALROLE, *REMOTEROLE);
+	FVector loc = GetActorLocation() + GetActorUpVector() * 30;
+	DrawDebugString(GetWorld() , loc , logStr , nullptr , FColor::Yellow , 0 , true , 1.f);
 }
 
