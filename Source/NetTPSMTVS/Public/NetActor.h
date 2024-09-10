@@ -56,4 +56,13 @@ public:
 	
 	UFUNCTION()
 	void OnRep_ChangeMatColor();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_ChangeColor(const FLinearColor newColor);
+
+	UFUNCTION(Client, Reliable)
+	void ClientRPC_ChangeColor(const FLinearColor newColor);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPC_ChangeColor(const FLinearColor newColor);
 };

@@ -34,8 +34,11 @@ void ANetActor::BeginPlay()
 		GetWorldTimerManager().SetTimer(handle , [&](){
 			//MatColor = FLinearColor(FMath::RandRange(0.0f, 0.3f), FMath::RandRange(0.0f , 0.3f), FMath::RandRange(0.0f , 0.3f), 1.f);
 			
-			MatColor = FLinearColor::MakeRandomColor();
-			OnRep_ChangeMatColor();
+			//MatColor = FLinearColor::MakeRandomColor();
+			//OnRep_ChangeMatColor();
+
+			FLinearColor matColor = FLinearColor::MakeRandomColor();
+			ServerRPC_ChangeColor(matColor);
 
 		} , 1 , true);
 	}
@@ -91,7 +94,7 @@ void ANetActor::FindOwner()
 			AActor* otherActor = *it;
 			float dist = GetDistanceTo(otherActor);
 
-			if ( dist < SearchDistance )
+			if ( dist < minDist )
 			{
 				minDist = dist;
 				newOwner = otherActor;
@@ -119,6 +122,35 @@ void ANetActor::OnRep_ChangeMatColor()
 	if (Mat)
 	{
 		Mat->SetVectorParameterValue(TEXT("FloorColor") , MatColor);
+	}
+}
+
+
+
+void ANetActor::ServerRPC_ChangeColor_Implementation(const FLinearColor newColor)
+{
+	//if ( Mat )
+	//{
+	//	Mat->SetVectorParameterValue(TEXT("FloorColor") , newColor);
+	//}
+
+	//ClientRPC_ChangeColor(newColor);
+	MulticastRPC_ChangeColor(newColor);
+}
+
+void ANetActor::ClientRPC_ChangeColor_Implementation(const FLinearColor newColor)
+{
+	if ( Mat )
+	{
+		Mat->SetVectorParameterValue(TEXT("FloorColor") , newColor);
+	}
+}
+
+void ANetActor::MulticastRPC_ChangeColor_Implementation(const FLinearColor newColor)
+{
+	if ( Mat )
+	{
+		Mat->SetVectorParameterValue(TEXT("FloorColor") , newColor);
 	}
 }
 
