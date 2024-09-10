@@ -18,6 +18,7 @@
 #include "HealthBar.h"
 #include "GameFramework/PlayerController.h"
 #include "NetTPSMTVS.h"
+#include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -69,6 +70,10 @@ ANetTPSMTVSCharacter::ANetTPSMTVSCharacter()
 
 	HPUIComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBar"));
 	HPUIComp->SetupAttachment(GetMesh());
+
+	// 네트워크 동기화옵션 활성화
+	bReplicates = true;
+	SetReplicateMovement(true);
 }
 
 void ANetTPSMTVSCharacter::BeginPlay()
@@ -166,7 +171,7 @@ void ANetTPSMTVSCharacter::Look(const FInputActionValue& Value)
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
 }
-AActor* tempOwner;
+
 void ANetTPSMTVSCharacter::GrabPistol(const FInputActionValue& Value)
 {
 	if ( bHasPistol )
@@ -181,33 +186,7 @@ void ANetTPSMTVSCharacter::GrabPistol(const FInputActionValue& Value)
 
 void ANetTPSMTVSCharacter::MyTakePistol()
 {
-	// 총을 잡지 않은 상태 -> 잡고싶다.
-			// 총목록을 검사하고싶다.
-	for ( AActor* pistol : PistolList )
-	{
-		// 나와 총과의 거리가 GrabDistance 이하라면
-		// 그 중에 소유자가 없는 총이라면
-		float tempDist = GetDistanceTo(pistol);
-		if ( tempDist > GrabDistance )
-			continue;
-		if ( nullptr != pistol->GetOwner() )
-			continue;
-
-		if ( MainUI )
-			MainUI->SetActivePistolUI(true);
-
-		// 그 총을 기억하고싶다. (GrabPistolActor)
-		GrabPistolActor = pistol;
-		// 잡은총의 소유자를 나로 하고싶다. -> 액터의 오너는 플레이어 컨트롤러이다.
-		pistol->SetOwner(this);
-		bHasPistol = true;
-
-		tempOwner = pistol->GetOwner();
-
-		// 총액터를 HandComp에 붙이고싶다.
-		AttachPistol(GrabPistolActor);
-		break;
-	}
+	ServerRPCTakePistol();
 }
 
 void ANetTPSMTVSCharacter::MyReleasePistol()
@@ -215,31 +194,15 @@ void ANetTPSMTVSCharacter::MyReleasePistol()
 	// 총을 잡고 있지 않거나 재장전 중이면 총을 버릴 수 없다.
 	if ( false == bHasPistol || IsReloading )
 		return;
-	
-	if ( MainUI )
-	{
-		MainUI->SetActivePistolUI(false);
-	}
 
-	// 총을 이미 잡은 상태 -> 놓고싶다.
-	if ( bHasPistol )
-	{
-		bHasPistol = false;
-	}
-
-	// 총의 오너를 취소하고싶다.
-	if ( GrabPistolActor )
-	{
-		DetachPistol();
-
-		GrabPistolActor->SetOwner(nullptr);
-		// 총을 잊고싶다.
-		GrabPistolActor = nullptr;
-	}
+	ServerRPCReleasePistol();
 }
 
 void ANetTPSMTVSCharacter::AttachPistol(AActor* pistolActor)
 {
+	if ( IsLocallyControlled() && MainUI )
+		MainUI->SetActivePistolUI(true);
+
 	GrabPistolActor = pistolActor;
 	auto* mesh = GrabPistolActor->GetComponentByClass<UStaticMeshComponent>();
 	check(mesh);
@@ -250,10 +213,15 @@ void ANetTPSMTVSCharacter::AttachPistol(AActor* pistolActor)
 	}
 }
 
-void ANetTPSMTVSCharacter::DetachPistol()
+void ANetTPSMTVSCharacter::DetachPistol(AActor* pistolActor)
 {
+	if ( IsLocallyControlled() && MainUI )
+	{
+		MainUI->SetActivePistolUI(false);
+	}
+
 	// 총의 메쉬를 가져와서
-	auto* mesh = GrabPistolActor->GetComponentByClass<UStaticMeshComponent>();
+	auto* mesh = pistolActor->GetComponentByClass<UStaticMeshComponent>();
 	check(mesh);
 	if ( mesh )
 	{
@@ -273,39 +241,8 @@ void ANetTPSMTVSCharacter::FirePistol(const FInputActionValue& Value)
 	if ( BulletCount <= 0 )
 		return;
 
-	// 총알 1발 감소하고 UI에 반영하고 싶다.
-	BulletCount--;
-	if ( MainUI )
-		MainUI->RemoveBulletUI();
-
-	// Fire몽타주를 재생하고싶다.
-	auto* anim = CastChecked<UNetTpsPlayerAnim>(GetMesh()->GetAnimInstance());
-	if ( anim )
-	{
-		anim->PlayFireMontage();
-	}
-
-	// 카메라 위치에서 카메라 앞 방향으로 1Km 선을 쏘고싶다.
-	FVector start = FollowCamera->GetComponentLocation();
-	FVector end = start + FollowCamera->GetForwardVector() * 100000.f;
-	FHitResult hitInfo;
-	FCollisionQueryParams params;
-	params.AddIgnoredActor(this);
-
-	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo , start , end , ECC_Visibility , params);
-	// 만약 부딪힌것이 있다면
-	if ( bHit )
-	{
-		// 그곳에 BulletImpactVFX를 생성해서 배치하고싶다.
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld() , BulletImpactVFX , hitInfo.ImpactPoint);
-
-		// 맞은 대상이 상대방일 경우 데미지 처리
-		auto* otherPlayer = Cast<ANetTPSMTVSCharacter>(hitInfo.GetActor());
-		if ( otherPlayer )
-		{
-			otherPlayer->DamageProcess();
-		}
-	}
+	ServerRPCFire();
+	
 }
 
 void ANetTPSMTVSCharacter::ReloadPistol(const FInputActionValue& Value)
@@ -344,20 +281,7 @@ void ANetTPSMTVSCharacter::InitMainUI()
 
 void ANetTPSMTVSCharacter::InitBulletUI()
 {
-	BulletCount = MaxBulletCount;
-	if ( MainUI )
-	{
-		MainUI->RemoveAllBulletUI();
-
-		//MainUI->InitBulletUI(MaxBulletCount);
-		for ( int32 i = 0; i < MaxBulletCount; i++ )
-		{
-			MainUI->AddBulletUI();
-		}
-	}
-
-	// 재장전 완료상태 처리
-	IsReloading = false;
+	ServerRPCReload();
 }
 
 float ANetTPSMTVSCharacter::GetHP()
@@ -372,7 +296,7 @@ void ANetTPSMTVSCharacter::SetHP(float value)
 	// UI에 할당할 퍼센트 계산
 	float percent = hp / MaxHP;
 
-	if (MainUI)
+	if ( MainUI )
 	{
 		MainUI->HP = percent;
 	}
@@ -388,9 +312,9 @@ void ANetTPSMTVSCharacter::DamageProcess()
 {
 	// 체력을 감소시킨다.
 	HP--;
-	
+
 	// 죽음처리
-	if (HP <= 0)
+	if ( HP <= 0 )
 	{
 		IsDead = true;
 	}
@@ -401,8 +325,148 @@ void ANetTPSMTVSCharacter::PrintNetLog()
 	const FString conStr = GetNetConnection() ? TEXT("Valid Connection") : TEXT("Invalid Connection");
 	const FString ownerName = GetOwner() ? GetOwner()->GetName() : TEXT("No Owner");
 
-	FString logStr = FString::Printf(TEXT("Connection : %s\nOwner Name : %s\nLocal Role : %s\nRemote Role : %s") , *conStr , *ownerName, *LOCALROLE, *REMOTEROLE);
+	FString logStr = FString::Printf(TEXT("Connection : %s\nOwner Name : %s\nLocal Role : %s\nRemote Role : %s") , *conStr , *ownerName , *LOCALROLE , *REMOTEROLE);
 	FVector loc = GetActorLocation() + GetActorUpVector() * 30;
 	DrawDebugString(GetWorld() , loc , logStr , nullptr , FColor::Yellow , 0 , true , 1.f);
+}
+
+void ANetTPSMTVSCharacter::ServerRPCTakePistol_Implementation()
+{
+	// 총을 잡지 않은 상태 -> 잡고싶다.
+	// 총목록을 검사하고싶다.
+	for ( AActor* pistol : PistolList )
+	{
+		// 나와 총과의 거리가 GrabDistance 이하라면
+		// 그 중에 소유자가 없는 총이라면
+		float tempDist = GetDistanceTo(pistol);
+		if ( tempDist > GrabDistance )
+			continue;
+		if ( nullptr != pistol->GetOwner() )
+			continue;
+
+		// 잡은총의 소유자를 나로 하고싶다. -> 액터의 오너는 플레이어 컨트롤러이다.
+		pistol->SetOwner(this);
+
+		// 그 총을 기억하고싶다. (GrabPistolActor)
+		GrabPistolActor = pistol;
+
+		bHasPistol = true;
+
+		MulticastRPCTakePistol(pistol);
+		break;
+	}
+}
+
+void ANetTPSMTVSCharacter::MulticastRPCTakePistol_Implementation(AActor* pistolActor)
+{
+	// 총액터를 HandComp에 붙이고싶다.
+	AttachPistol(pistolActor);
+}
+
+void ANetTPSMTVSCharacter::ServerRPCReleasePistol_Implementation()
+{
+	// 총을 이미 잡은 상태 -> 놓고싶다.
+	if ( bHasPistol )
+	{
+		bHasPistol = false;
+	}
+
+	// 총의 오너를 취소하고싶다.
+	if ( GrabPistolActor )
+	{
+		MulticastRPCReleasePistol(GrabPistolActor);
+
+		GrabPistolActor->SetOwner(nullptr);
+		// 총을 잊고싶다.
+		GrabPistolActor = nullptr;
+	}
+}
+
+void ANetTPSMTVSCharacter::MulticastRPCReleasePistol_Implementation(AActor* pistolActor)
+{
+	if ( pistolActor )
+	{
+		// 총 분리
+		DetachPistol(pistolActor);
+	}
+}
+
+void ANetTPSMTVSCharacter::ServerRPCFire_Implementation()
+{
+	// 총알 1발 감소하고 UI에 반영하고 싶다.
+	BulletCount--;
+
+	// 카메라 위치에서 카메라 앞 방향으로 1Km 선을 쏘고싶다.
+	FVector start = FollowCamera->GetComponentLocation();
+	FVector end = start + FollowCamera->GetForwardVector() * 100000.f;
+	FHitResult hitInfo;
+	FCollisionQueryParams params;
+	params.AddIgnoredActor(this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo , start , end , ECC_Visibility , params);
+
+	// 만약 부딪힌것이 있다면
+	if ( bHit )
+	{
+		// 맞은 대상이 상대방일 경우 데미지 처리
+		auto* otherPlayer = Cast<ANetTPSMTVSCharacter>(hitInfo.GetActor());
+		if ( otherPlayer )
+		{
+			otherPlayer->DamageProcess();
+		}
+	}
+
+	MulticastRPCFire(bHit, hitInfo);
+}
+
+void ANetTPSMTVSCharacter::MulticastRPCFire_Implementation(bool bHit , const FHitResult hitInfo)
+{
+	if ( IsLocallyControlled() && MainUI )
+		MainUI->RemoveBulletUI();
+
+	// Fire몽타주를 재생하고싶다.
+	auto* anim = CastChecked<UNetTpsPlayerAnim>(GetMesh()->GetAnimInstance());
+	if ( anim )
+	{
+		anim->PlayFireMontage();
+	}
+	
+	// 만약 부딪힌것이 있다면
+	if ( bHit )
+	{
+		// 그곳에 BulletImpactVFX를 생성해서 배치하고싶다.
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld() , BulletImpactVFX , hitInfo.ImpactPoint);
+	}
+}
+
+void ANetTPSMTVSCharacter::ServerRPCReload_Implementation()
+{
+	BulletCount = MaxBulletCount;
+	ClientRPCReload();
+}
+
+void ANetTPSMTVSCharacter::ClientRPCReload_Implementation()
+{
+	if ( MainUI )
+	{
+		MainUI->RemoveAllBulletUI();
+
+		//MainUI->InitBulletUI(MaxBulletCount);
+		for ( int32 i = 0; i < MaxBulletCount; i++ )
+		{
+			MainUI->AddBulletUI();
+		}
+	}
+
+	// 재장전 완료상태 처리
+	IsReloading = false;
+}
+
+void ANetTPSMTVSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ANetTPSMTVSCharacter, bHasPistol);
+	DOREPLIFETIME(ANetTPSMTVSCharacter, BulletCount);
 }
 

@@ -93,7 +93,7 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 
-	UPROPERTY(EditDefaultsOnly , BlueprintReadWrite)
+	UPROPERTY(Replicated, EditDefaultsOnly , BlueprintReadWrite)
 	bool bHasPistol;
 
 	// 태어날 때 모든 총 목록을 기억하고싶다.
@@ -113,7 +113,7 @@ public:
 
 	void AttachPistol(AActor* pistolActor);
 
-	void DetachPistol();
+	void DetachPistol(AActor* pistolActor);
 
 
 	// 만약 마우스 왼쪽 버튼을 누르면 총을쏘고싶다.
@@ -137,6 +137,8 @@ public:
 
 	UPROPERTY(EditDefaultsOnly , Category = Pistol)
 	int32 MaxBulletCount = 10;
+	
+	UPROPERTY(Replicated)
 	int32 BulletCount = MaxBulletCount;
 
 	// 플레이어 체력 Max
@@ -161,5 +163,37 @@ public:
 	bool IsDead;
 
 	void PrintNetLog();
+
+	// --------------- Multiplayer 요소들 ---------------
+public:
+	// 총 잡기 RPC
+	UFUNCTION(Server, Reliable)
+	void ServerRPCTakePistol();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCTakePistol(AActor* pistolActor);
+
+	// 총 놓기 RPC
+	UFUNCTION(Server, Reliable)
+	void ServerRPCReleasePistol();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCReleasePistol(AActor* pistolActor);
+
+	// 총 쏘기 RPC
+	UFUNCTION(Server, Reliable)
+	void ServerRPCFire();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCFire(bool bHit, const FHitResult hitInfo);
+
+	// 재장전 RPC
+	UFUNCTION(Server, Reliable)
+	void ServerRPCReload();
+
+	UFUNCTION(Client, Reliable)
+	void ClientRPCReload();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
 
