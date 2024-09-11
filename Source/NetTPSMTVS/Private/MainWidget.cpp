@@ -4,6 +4,18 @@
 #include "MainWidget.h"
 #include "Components/Image.h"
 #include "Components/UniformGridPanel.h"
+#include "Components/HorizontalBox.h"
+#include "Components/Button.h"
+
+void UMainWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+	
+	btn_retry->OnClicked.AddDynamic(this, &UMainWidget::OnRetry);
+	btn_exit->OnClicked.AddDynamic(this, &UMainWidget::OnExit);
+
+	GameoverUI->SetVisibility(ESlateVisibility::Hidden);
+}
 
 // 플레이어가 태어날 때
 void UMainWidget::InitBulletUI(int32 maxBulletCount)
@@ -50,4 +62,22 @@ void UMainWidget::SetActivePistolUI(bool value)
 		ImageCrosshair->SetVisibility(ESlateVisibility::Hidden);
 		BulletPanel->SetVisibility(ESlateVisibility::Hidden);
 	}
+}
+
+void UMainWidget::PlayDamageAnimation()
+{
+	if (DamageAnim)
+	{
+		PlayAnimation(DamageAnim);
+	}
+}
+
+void UMainWidget::OnRetry()
+{
+
+}
+
+void UMainWidget::OnExit()
+{
+
 }

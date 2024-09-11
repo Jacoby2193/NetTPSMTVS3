@@ -146,8 +146,11 @@ public:
 	float MaxHP = 3;
 
 	// 현재 체력
-	UPROPERTY(BlueprintReadOnly , Category = HP)
+	UPROPERTY(ReplicatedUsing = OnRep_HP , BlueprintReadOnly , Category = HP)
 	float hp = MaxHP;
+
+	UFUNCTION()
+	void OnRep_HP();
 
 	__declspec(property(get=GetHP, put=SetHP)) float HP;
 
@@ -162,7 +165,16 @@ public:
 
 	bool IsDead;
 
+	// 카메라 셰이크
+	UPROPERTY(EditDefaultsOnly, Category = UI)
+	TSubclassOf<class UCameraShakeBase> DamageCameraShake;
+
+	// 죽음처리
+	void DieProcess();
+
 	void PrintNetLog();
+
+
 
 	// --------------- Multiplayer 요소들 ---------------
 public:

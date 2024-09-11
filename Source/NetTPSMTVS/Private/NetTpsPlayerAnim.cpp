@@ -55,3 +55,11 @@ void UNetTpsPlayerAnim::AnimNotify_OnMyReloadFinish()
 	// 총알UI 초기화 시켜준다.
 	Me->InitBulletUI();
 }
+
+void UNetTpsPlayerAnim::AnimNotify_DieEnd()
+{
+	if (Me && Me->IsLocallyControlled())
+	{
+		Me->DieProcess();
+	}
+}

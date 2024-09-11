@@ -19,6 +19,8 @@
 #include "GameFramework/PlayerController.h"
 #include "NetTPSMTVS.h"
 #include "Net/UnrealNetwork.h"
+#include "Components/HorizontalBox.h"
+
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -91,6 +93,16 @@ void ANetTPSMTVSCharacter::BeginPlay()
 void ANetTPSMTVSCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if ( HPUIComp )
+	{
+		//FVector camLoc = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraLocation();
+		FVector camLoc = UGameplayStatics::GetPlayerCameraManager(GetWorld() , 0)->GetCameraLocation();
+		FVector direction = camLoc - HPUIComp->GetComponentLocation();
+		direction.Z = 0.f;
+
+		HPUIComp->SetWorldRotation(direction.GetSafeNormal().ToOrientationRotator());
+	}
 
 	PrintNetLog();
 }
@@ -192,7 +204,7 @@ void ANetTPSMTVSCharacter::MyTakePistol()
 void ANetTPSMTVSCharacter::MyReleasePistol()
 {
 	// 총을 잡고 있지 않거나 재장전 중이면 총을 버릴 수 없다.
-	if ( false == bHasPistol || IsReloading )
+	if ( false == bHasPistol || IsReloading || false == IsLocallyControlled() )
 		return;
 
 	ServerRPCReleasePistol();
@@ -242,7 +254,7 @@ void ANetTPSMTVSCharacter::FirePistol(const FInputActionValue& Value)
 		return;
 
 	ServerRPCFire();
-	
+
 }
 
 void ANetTPSMTVSCharacter::ReloadPistol(const FInputActionValue& Value)
@@ -276,12 +288,59 @@ void ANetTPSMTVSCharacter::InitMainUI()
 		MainUI->AddToViewport();
 		MainUI->SetActivePistolUI(false);
 		MainUI->InitBulletUI(MaxBulletCount);
+
+		// MainUI가 있기 때문에 머리위의 HPUIComp는 비활성화 하고싶다.
+		if ( HPUIComp )
+		{
+			HPUIComp->SetVisibility(false);
+		}
 	}
+
 }
 
 void ANetTPSMTVSCharacter::InitBulletUI()
 {
 	ServerRPCReload();
+}
+
+void ANetTPSMTVSCharacter::OnRep_HP()
+{
+	// 죽음처리
+	if ( HP <= 0 )
+	{
+		IsDead = true;
+		if ( bHasPistol )
+		{
+			GrabPistol(FInputActionValue());
+		}
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetCharacterMovement()->DisableMovement();
+	}
+
+	// UI에 할당할 퍼센트 계산
+	float percent = hp / MaxHP;
+
+	if ( MainUI )
+	{
+		MainUI->HP = percent;
+		// 피격효과 처리
+		MainUI->PlayDamageAnimation();
+		if ( DamageCameraShake )
+		{
+			auto* pc = Cast<APlayerController>(Controller);
+			if ( pc )
+			{
+				pc->ClientStartCameraShake(DamageCameraShake);
+			}
+		}
+	}
+	else
+	{
+		// MainUI가 없을때는 다른 플레이어다. HPUIComp에 적용해주자
+		auto* hpUI = Cast<UHealthBar>(HPUIComp->GetWidget());
+		hpUI->HP = percent;
+	}
 }
 
 float ANetTPSMTVSCharacter::GetHP()
@@ -292,20 +351,7 @@ float ANetTPSMTVSCharacter::GetHP()
 void ANetTPSMTVSCharacter::SetHP(float value)
 {
 	hp = value;
-
-	// UI에 할당할 퍼센트 계산
-	float percent = hp / MaxHP;
-
-	if ( MainUI )
-	{
-		MainUI->HP = percent;
-	}
-	else
-	{
-		// MainUI가 없을때는 다른 플레이어다. HPUIComp에 적용해주자
-		auto* hpUI = Cast<UHealthBar>(HPUIComp->GetWidget());
-		hpUI->HP = percent;
-	}
+	OnRep_HP();
 }
 
 void ANetTPSMTVSCharacter::DamageProcess()
@@ -318,6 +364,23 @@ void ANetTPSMTVSCharacter::DamageProcess()
 	{
 		IsDead = true;
 	}
+}
+
+void ANetTPSMTVSCharacter::DieProcess()
+{
+	auto* pc = Cast<APlayerController>(Controller);
+	if ( pc )
+	{
+		pc->SetShowMouseCursor(true);
+	}
+	GetFollowCamera()->PostProcessSettings.ColorSaturation = FVector4(0 , 0 , 0 , 1);
+
+	// Die UI표시
+	if ( IsLocallyControlled() && MainUI )
+	{
+		MainUI->GameoverUI->SetVisibility(ESlateVisibility::Visible);
+	}
+
 }
 
 void ANetTPSMTVSCharacter::PrintNetLog()
@@ -416,7 +479,7 @@ void ANetTPSMTVSCharacter::ServerRPCFire_Implementation()
 		}
 	}
 
-	MulticastRPCFire(bHit, hitInfo);
+	MulticastRPCFire(bHit , hitInfo);
 }
 
 void ANetTPSMTVSCharacter::MulticastRPCFire_Implementation(bool bHit , const FHitResult hitInfo)
@@ -430,7 +493,7 @@ void ANetTPSMTVSCharacter::MulticastRPCFire_Implementation(bool bHit , const FHi
 	{
 		anim->PlayFireMontage();
 	}
-	
+
 	// 만약 부딪힌것이 있다면
 	if ( bHit )
 	{
@@ -466,7 +529,8 @@ void ANetTPSMTVSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ANetTPSMTVSCharacter, bHasPistol);
-	DOREPLIFETIME(ANetTPSMTVSCharacter, BulletCount);
+	DOREPLIFETIME(ANetTPSMTVSCharacter , bHasPistol);
+	DOREPLIFETIME(ANetTPSMTVSCharacter , BulletCount);
+	DOREPLIFETIME(ANetTPSMTVSCharacter , hp);
 }
 
