@@ -83,7 +83,9 @@ void UMainWidget::OnRetry()
 		// 마우스커서도 안보이도록 처리
 		pc->SetShowMouseCursor(false);
 		// 리스폰 요청
-		pc->ServerRPCRespawnPlayer();
+		//pc->ServerRPCRespawnPlayer();
+		// 관전자 등장
+		pc->ServerRPCChangeToSpectator();
 	}
 
 }
