@@ -6,6 +6,7 @@
 #include "Components/UniformGridPanel.h"
 #include "Components/HorizontalBox.h"
 #include "Components/Button.h"
+#include "NetPlayerController.h"
 
 void UMainWidget::NativeConstruct()
 {
@@ -13,13 +14,12 @@ void UMainWidget::NativeConstruct()
 	
 	btn_retry->OnClicked.AddDynamic(this, &UMainWidget::OnRetry);
 	btn_exit->OnClicked.AddDynamic(this, &UMainWidget::OnExit);
-
-	GameoverUI->SetVisibility(ESlateVisibility::Hidden);
 }
 
 // 플레이어가 태어날 때
 void UMainWidget::InitBulletUI(int32 maxBulletCount)
 {
+	RemoveAllBulletUI();
 	// 총알UI를 maxBulletCount만큼 채우고싶다.
 	for(int32 i=0 ; i< maxBulletCount  ; i++)
 	{
@@ -74,6 +74,17 @@ void UMainWidget::PlayDamageAnimation()
 
 void UMainWidget::OnRetry()
 {
+	// 게임종료 UI 안보이도록 처리
+	GameoverUI->SetVisibility(ESlateVisibility::Hidden);
+
+	auto* pc = Cast<ANetPlayerController>(GetWorld()->GetFirstPlayerController());
+	if (pc)
+	{
+		// 마우스커서도 안보이도록 처리
+		pc->SetShowMouseCursor(false);
+		// 리스폰 요청
+		pc->ServerRPCRespawnPlayer();
+	}
 
 }
 

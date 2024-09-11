@@ -83,8 +83,11 @@ protected:
 
 	// To add mapping context
 	virtual void BeginPlay();
+	
+	virtual void PossessedBy(AController* NewController) override;
 
 	virtual void Tick(float DeltaSeconds) override;
+
 
 public:
 	/** Returns CameraBoom subobject **/
@@ -120,10 +123,6 @@ public:
 	// 부딪힌곳에 총알자국을 표현하고싶다.
 	UPROPERTY(EditDefaultsOnly , Category = Pistol)
 	class UParticleSystem* BulletImpactVFX;
-
-	// MainWidget을 생성해서 기억하고싶다.
-	UPROPERTY(EditDefaultsOnly , Category = Pistol)
-	TSubclassOf<class UUserWidget> MainUIFactory;
 
 	UPROPERTY()
 	class UMainWidget* MainUI;
