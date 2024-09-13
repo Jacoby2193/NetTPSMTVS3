@@ -7,15 +7,39 @@
 #include "Components/TextBlock.h"
 #include "NetTPSGameInstance.h"
 #include "Components/EditableText.h"
+#include "Components/WidgetSwitcher.h"
+#include "SessionSlotWidget.h"
+#include "Components/ScrollBox.h"
 
 void ULobbyWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	MENU_Button_GoCreateRoom->OnClicked.AddDynamic(this , &ULobbyWidget::MENU_OnClickGoCreateRoom);
+	MENU_Button_GoFindSessions->OnClicked.AddDynamic(this , &ULobbyWidget::MENU_OnClickGoFindSessions);
+
+	CR_Button_GoMenu->OnClicked.AddDynamic(this , &ULobbyWidget::OnClickGoMenu);
+	FS_Button_GoMenu->OnClicked.AddDynamic(this , &ULobbyWidget::OnClickGoMenu);
+
 	CR_Button_CreateRoom->OnClicked.AddDynamic(this, &ULobbyWidget::CR_OnClickCreateRoom);
 	CR_Slider_PlayerCount->OnValueChanged.AddDynamic(this , &ULobbyWidget::CR_OnChangeSliderPlayerCount);
 
 	CR_Slider_PlayerCount->SetValue(2);
+}
+
+void ULobbyWidget::OnClickGoMenu()
+{
+	LobbyWidgetSwitcher->SetActiveWidgetIndex(0);
+}
+
+void ULobbyWidget::MENU_OnClickGoCreateRoom()
+{
+	LobbyWidgetSwitcher->SetActiveWidgetIndex(1);
+}
+
+void ULobbyWidget::MENU_OnClickGoFindSessions()
+{
+	LobbyWidgetSwitcher->SetActiveWidgetIndex(2);
 }
 
 void ULobbyWidget::CR_OnClickCreateRoom()
@@ -39,4 +63,15 @@ void ULobbyWidget::CR_OnChangeSliderPlayerCount(float value)
 	// 슬라이더의 값이 변경되면 CR_Text_PlayerCount에 값을 반영하고 싶다.
 	CR_Text_PlayerCount->SetText(FText::AsNumber(value));
 
+}
+
+void ULobbyWidget::AddSessionSlotWidget(const struct FRoomInfo& info)
+{
+	// 슬롯을 생성해서 
+	auto* slot = CreateWidget<USessionSlotWidget>(this, SessionSlotWidgetFactory);
+
+	slot->UpdateInfo(info);
+	// FS_ScrollBox에 추가 하고싶다.
+	
+	FS_ScrollBox->AddChild(slot);
 }

@@ -7,6 +7,31 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "NetTPSGameInstance.generated.h"
 
+
+USTRUCT(BlueprintType)
+struct FRoomInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	FString roomName;
+	UPROPERTY(BlueprintReadOnly)
+	FString hostName;
+	UPROPERTY(BlueprintReadOnly)
+	int32 maxPlayerCount;
+	UPROPERTY(BlueprintReadOnly)
+	int32 currentPlayerCount;
+	UPROPERTY(BlueprintReadOnly)
+	int32 pingMS;
+
+	int32 index;
+
+	FString ToString()
+	{
+		return FString::Printf(TEXT("%d)[%s][%s] (%d / %d) -> %dms"), index, *roomName, *hostName, currentPlayerCount, maxPlayerCount, pingMS);
+	}
+};
+
 /**
  * 
  */
@@ -27,4 +52,11 @@ public:
 	void CreateMySession(FString roomName, int32 playerCount);
 	// 방생성 응답
 	void OnMyCreateSessionComplete(FName SessionName , bool bWasSuccessful);
+
+	// 찾을 방의 목록
+	TSharedPtr<FOnlineSessionSearch> SessionSearch;
+	// 방찾기 요청
+	void FindOtherSessions();
+	// 방찾기 응답
+	void OnMyFindSessionsCompleteDelegates(bool bWasSuccessful);
 };

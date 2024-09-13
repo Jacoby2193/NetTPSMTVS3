@@ -5,6 +5,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "NetTPSMTVS.h"
+#include "Online/OnlineSessionNames.h"
 
 void UNetTPSGameInstance::Init()
 {
@@ -16,13 +17,16 @@ void UNetTPSGameInstance::Init()
 
 		// 방생성 요청 -> 응답
 		SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this , &UNetTPSGameInstance::OnMyCreateSessionComplete);
+
+		SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this , &UNetTPSGameInstance::OnMyFindSessionsCompleteDelegates);
 	}
 
-	//PRINTLOG(TEXT("Network Start!!"));
-	//FTimerHandle handle;
-	//GetWorld()->GetTimerManager().SetTimer(handle , [&]() {
-	//	CreateMySession(MySessionName , 10);
-	//	}, 3, false);
+	PRINTLOG(TEXT("Network Start!!"));
+	FTimerHandle handle;
+	GetWorld()->GetTimerManager().SetTimer(handle , [&]() {
+		/*CreateMySession(MySessionName , 10);*/
+		FindOtherSessions();
+		} , 3 , false);
 
 }
 
@@ -70,5 +74,53 @@ void UNetTPSGameInstance::OnMyCreateSessionComplete(FName SessionName , bool bWa
 	else
 	{
 		PRINTLOG(TEXT("OnMyCreateSessionComplete is Failed!!!"));
+	}
+}
+
+void UNetTPSGameInstance::FindOtherSessions()
+{
+	SessionSearch = MakeShareable(new FOnlineSessionSearch);
+
+	SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
+	SessionSearch->bIsLanQuery = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL";
+	SessionSearch->MaxSearchResults = 40;
+
+	SessionInterface->FindSessions(0 , SessionSearch.ToSharedRef());
+}
+
+void UNetTPSGameInstance::OnMyFindSessionsCompleteDelegates(bool bWasSuccessful)
+{
+	if ( bWasSuccessful )
+	{
+		TArray<FOnlineSessionSearchResult> results = SessionSearch->SearchResults;
+
+		for (int32 i=0 ; i< results.Num() ; i++)
+		{
+			FOnlineSessionSearchResult ret = results[i];
+			if (false == ret.IsValid())
+			{
+				continue;
+			}
+
+			FRoomInfo roomInfo;
+			roomInfo.index = i;
+
+			// 방이름
+			ret.Session.SessionSettings.Get(FName("ROOM_NAME") , roomInfo.roomName);
+			// 호스트이름
+			ret.Session.SessionSettings.Get(FName("HOST_NAME") , roomInfo.hostName);
+			// 최대 플레이어 수
+			roomInfo.maxPlayerCount = ret.Session.SessionSettings.NumPublicConnections;
+			// 입장한 플레이어 수(최대 - 남은)
+			roomInfo.currentPlayerCount = roomInfo.maxPlayerCount - ret.Session.NumOpenPublicConnections;
+			// 핑 정보
+			roomInfo.pingMS = ret.PingInMs;
+
+			PRINTLOG(TEXT("%s") , *roomInfo.ToString());
+		}
+	}
+	else
+	{
+		PRINTLOG(TEXT("OnMyFindSessionsCompleteDelegates is Failed!!!"));
 	}
 }
