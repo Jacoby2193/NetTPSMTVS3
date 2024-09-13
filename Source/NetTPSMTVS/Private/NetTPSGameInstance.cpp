@@ -18,15 +18,22 @@ void UNetTPSGameInstance::Init()
 		// 방생성 요청 -> 응답
 		SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this , &UNetTPSGameInstance::OnMyCreateSessionComplete);
 
+		// 방찾기 응답
 		SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this , &UNetTPSGameInstance::OnMyFindSessionsCompleteDelegates);
+
+		// 방입장 응답
+		SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this , &UNetTPSGameInstance::OnMyJoinSessionComplete);
+
+		// 방퇴장 응답
+		SessionInterface->OnDestroySessionCompleteDelegates.AddUObject(this , &UNetTPSGameInstance::OnMyDestroySessionComplete);
 	}
 
-	PRINTLOG(TEXT("Network Start!!"));
-	FTimerHandle handle;
-	GetWorld()->GetTimerManager().SetTimer(handle , [&]() {
-		/*CreateMySession(MySessionName , 10);*/
-		FindOtherSessions();
-		} , 3 , false);
+	//PRINTLOG(TEXT("Network Start!!"));
+	//FTimerHandle handle;
+	//GetWorld()->GetTimerManager().SetTimer(handle , [&]() {
+	//	/*CreateMySession(MySessionName , 10);*/
+	//	FindOtherSessions();
+	//	} , 3 , false);
 
 }
 
@@ -70,6 +77,9 @@ void UNetTPSGameInstance::OnMyCreateSessionComplete(FName SessionName , bool bWa
 	if ( bWasSuccessful )
 	{
 		PRINTLOG(TEXT("OnMyCreateSessionComplete is Success~~~~~"));
+
+		// 서버가 여행을 떠나고싶다.
+		GetWorld()->ServerTravel(TEXT("/Game/NetTPS/Maps/BattleMap?listen"));
 	}
 	else
 	{
@@ -116,11 +126,62 @@ void UNetTPSGameInstance::OnMyFindSessionsCompleteDelegates(bool bWasSuccessful)
 			// 핑 정보
 			roomInfo.pingMS = ret.PingInMs;
 
+			if ( OnSearchSignatureCompleteDelegate.IsBound() )
+				OnSearchSignatureCompleteDelegate.Broadcast(roomInfo);
+
 			PRINTLOG(TEXT("%s") , *roomInfo.ToString());
 		}
 	}
 	else
 	{
 		PRINTLOG(TEXT("OnMyFindSessionsCompleteDelegates is Failed!!!"));
+	}
+}
+
+void UNetTPSGameInstance::JoinSession(int32 index)
+{
+	auto result = SessionSearch->SearchResults[index];
+	SessionInterface->JoinSession(0 , FName(MySessionName) , result);
+}
+
+void UNetTPSGameInstance::OnMyJoinSessionComplete(FName SessionName , EOnJoinSessionCompleteResult::Type EOnJoinSessionCompleteResult)
+{
+	if ( EOnJoinSessionCompleteResult::Success == EOnJoinSessionCompleteResult )
+	{
+		// 서버가 있는 레벨로 여행을 떠나고 싶다.
+		auto* pc = GetWorld()->GetFirstPlayerController();
+
+		FString url;
+		SessionInterface->GetResolvedConnectString(SessionName, url);
+		if (false == url.IsEmpty())
+		{
+			pc->ClientTravel(url , ETravelType::TRAVEL_Absolute);
+		}
+	}
+}
+
+void UNetTPSGameInstance::ExitSession()
+{
+	ServerRPCExitSession();
+}
+
+void UNetTPSGameInstance::ServerRPCExitSession_Implementation()
+{
+	MulticastRPCExitSession();
+}
+
+void UNetTPSGameInstance::MulticastRPCExitSession_Implementation()
+{
+	// 방퇴장 요청
+	SessionInterface->DestroySession(FName(MySessionName));
+}
+
+void UNetTPSGameInstance::OnMyDestroySessionComplete(FName SessionName , bool bWasSuccessful)
+{
+	if ( bWasSuccessful )
+	{
+		// 클라이언트가 로비로 여행을 가고싶다.
+		auto* pc = GetWorld()->GetFirstPlayerController();
+		pc->ClientTravel(TEXT("/Game/NetTPS/Maps/LobbyMap"), ETravelType::TRAVEL_Absolute);
 	}
 }

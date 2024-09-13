@@ -7,13 +7,14 @@
 #include "Components/HorizontalBox.h"
 #include "Components/Button.h"
 #include "NetPlayerController.h"
+#include "NetTPSGameInstance.h"
 
 void UMainWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	
-	btn_retry->OnClicked.AddDynamic(this, &UMainWidget::OnRetry);
-	btn_exit->OnClicked.AddDynamic(this, &UMainWidget::OnExit);
+
+	btn_retry->OnClicked.AddDynamic(this , &UMainWidget::OnRetry);
+	btn_exit->OnClicked.AddDynamic(this , &UMainWidget::OnExit);
 }
 
 // 플레이어가 태어날 때
@@ -21,7 +22,7 @@ void UMainWidget::InitBulletUI(int32 maxBulletCount)
 {
 	RemoveAllBulletUI();
 	// 총알UI를 maxBulletCount만큼 채우고싶다.
-	for(int32 i=0 ; i< maxBulletCount  ; i++)
+	for ( int32 i = 0; i < maxBulletCount; i++ )
 	{
 		AddBulletUI();
 	}
@@ -52,7 +53,7 @@ void UMainWidget::RemoveAllBulletUI()
 
 void UMainWidget::SetActivePistolUI(bool value)
 {
-	if (value)
+	if ( value )
 	{
 		ImageCrosshair->SetVisibility(ESlateVisibility::Visible);
 		BulletPanel->SetVisibility(ESlateVisibility::Visible);
@@ -66,7 +67,7 @@ void UMainWidget::SetActivePistolUI(bool value)
 
 void UMainWidget::PlayDamageAnimation()
 {
-	if (DamageAnim)
+	if ( DamageAnim )
 	{
 		PlayAnimation(DamageAnim);
 	}
@@ -78,7 +79,7 @@ void UMainWidget::OnRetry()
 	GameoverUI->SetVisibility(ESlateVisibility::Hidden);
 
 	auto* pc = Cast<ANetPlayerController>(GetWorld()->GetFirstPlayerController());
-	if (pc)
+	if ( pc )
 	{
 		// 마우스커서도 안보이도록 처리
 		pc->SetShowMouseCursor(false);
@@ -92,5 +93,10 @@ void UMainWidget::OnRetry()
 
 void UMainWidget::OnExit()
 {
-
+	// 방에서 퇴장하고 싶다.
+	auto* gi = Cast<UNetTPSGameInstance>(GetWorld()->GetGameInstance());
+	if ( gi )
+	{
+		gi->ExitSession();
+	}
 }

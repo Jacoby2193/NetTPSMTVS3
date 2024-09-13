@@ -73,6 +73,9 @@ public:
 	TSubclassOf<class USessionSlotWidget> SessionSlotWidgetFactory;
 
 	UFUNCTION()
+	void FS_OnClickFindSessions();
+
+	UFUNCTION()
 	void AddSessionSlotWidget(const struct FRoomInfo& info);
 	
 };

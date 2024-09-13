@@ -16,6 +16,11 @@ void USessionSlotWidget::NativeConstruct()
 void USessionSlotWidget::OnClickJoin()
 {
 	// SessionSearchIndex
+	auto* gi = Cast<UNetTPSGameInstance>(GetWorld()->GetGameInstance());
+	if ( gi )
+	{
+		gi->JoinSession(SessionSearchIndex);
+	}
 }
 
 void USessionSlotWidget::UpdateInfo(const struct FRoomInfo& info)

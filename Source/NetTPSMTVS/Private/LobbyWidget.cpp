@@ -15,6 +15,11 @@ void ULobbyWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	// 게임인스턴스를 가져와서
+	auto* gi = Cast<UNetTPSGameInstance>(GetWorld()->GetGameInstance());
+	// OnSearchSignatureCompleteDelegate에 AddSessionSlotWidget을 연결하고싶다.
+	gi->OnSearchSignatureCompleteDelegate.AddDynamic(this , &ULobbyWidget::AddSessionSlotWidget);
+
 	MENU_Button_GoCreateRoom->OnClicked.AddDynamic(this , &ULobbyWidget::MENU_OnClickGoCreateRoom);
 	MENU_Button_GoFindSessions->OnClicked.AddDynamic(this , &ULobbyWidget::MENU_OnClickGoFindSessions);
 
@@ -23,6 +28,8 @@ void ULobbyWidget::NativeConstruct()
 
 	CR_Button_CreateRoom->OnClicked.AddDynamic(this, &ULobbyWidget::CR_OnClickCreateRoom);
 	CR_Slider_PlayerCount->OnValueChanged.AddDynamic(this , &ULobbyWidget::CR_OnChangeSliderPlayerCount);
+
+	FS_Button_FindSessions->OnClicked.AddDynamic(this , &ULobbyWidget::FS_OnClickFindSessions);
 
 	CR_Slider_PlayerCount->SetValue(2);
 }
@@ -63,6 +70,19 @@ void ULobbyWidget::CR_OnChangeSliderPlayerCount(float value)
 	// 슬라이더의 값이 변경되면 CR_Text_PlayerCount에 값을 반영하고 싶다.
 	CR_Text_PlayerCount->SetText(FText::AsNumber(value));
 
+}
+
+void ULobbyWidget::FS_OnClickFindSessions()
+{
+	// 기존의 방 목록을 삭제하고
+	FS_ScrollBox->ClearChildren();
+
+	// 방찾기를 요청하고싶다.
+	auto* gi = Cast<UNetTPSGameInstance>(GetWorld()->GetGameInstance());
+	if ( gi )
+	{
+		gi->FindOtherSessions();
+	}
 }
 
 void ULobbyWidget::AddSessionSlotWidget(const struct FRoomInfo& info)

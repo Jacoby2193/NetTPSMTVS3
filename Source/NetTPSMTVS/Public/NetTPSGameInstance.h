@@ -7,7 +7,6 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "NetTPSGameInstance.generated.h"
 
-
 USTRUCT(BlueprintType)
 struct FRoomInfo
 {
@@ -31,6 +30,8 @@ struct FRoomInfo
 		return FString::Printf(TEXT("%d)[%s][%s] (%d / %d) -> %dms"), index, *roomName, *hostName, currentPlayerCount, maxPlayerCount, pingMS);
 	}
 };
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSearchSignature , const struct FRoomInfo& , info);
 
 /**
  * 
@@ -59,4 +60,26 @@ public:
 	void FindOtherSessions();
 	// 방찾기 응답
 	void OnMyFindSessionsCompleteDelegates(bool bWasSuccessful);
+
+	FSearchSignature OnSearchSignatureCompleteDelegate;
+
+	// 방입장 요청
+	void JoinSession(int32 index);
+	// 방입장 응답
+	void OnMyJoinSessionComplete(FName SessionName , EOnJoinSessionCompleteResult::Type EOnJoinSessionCompleteResult);
+
+
+
+	// 방퇴장 요청 -> UI에서 호출
+	void ExitSession();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCExitSession();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCExitSession();
+	// 방퇴장 응답
+
+	void OnMyDestroySessionComplete(FName SessionName , bool bWasSuccessful);
+
 };
