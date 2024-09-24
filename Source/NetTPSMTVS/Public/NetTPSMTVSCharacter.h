@@ -205,6 +205,17 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPCReload();
 
+
+	// 채팅을 클라가 요청하면
+	// 서버가 멀티캐스트 하고싶다.
+	UFUNCTION(Server, Reliable)
+	void ServerRPCChat(const FString& msg);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MultiRPCChat(const FString& msg);
+
+
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
 

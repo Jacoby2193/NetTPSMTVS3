@@ -76,4 +76,29 @@ public:
 	class UTextBlock* txt_users;
 
 	virtual void NativeTick(const FGeometry& MyGeometry , float InDeltaTime) override;
+
+
+	// 채팅 ============
+	// 1. send 버튼을 누르면 서버로 edit_input의 내용을 ServerRPC로 보내고 싶다.
+	// 주인공 -> ServerRPC를 하면 MulticastRPC를 해서 다시 내용을 전달 받을 예정이다.
+	// 2. 전달받은 message를 ChatWidget을 만들어서 scroll_msgList에 추가하고싶다.
+
+	UPROPERTY(meta=(BindWidget))
+	class UScrollBox* scroll_msgList;
+
+	UPROPERTY(meta=(BindWidget))
+	class UEditableText* edit_input;
+
+	UPROPERTY(meta=(BindWidget))
+	class UButton* btn_send;
+
+	UFUNCTION()
+	void OnMySend();
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<class UChatWidget> ChatWidgetFactory;
+
+	void AddChatMessage(const FString& msg);
+
+
 };

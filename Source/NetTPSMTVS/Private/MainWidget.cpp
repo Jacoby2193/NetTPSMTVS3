@@ -11,6 +11,10 @@
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
 #include "Components/TextBlock.h"
+#include "NetTPSMTVSCharacter.h"
+#include "Components/EditableText.h"
+#include "ChatWidget.h"
+#include "Components/ScrollBox.h"
 
 void UMainWidget::NativeConstruct()
 {
@@ -18,6 +22,7 @@ void UMainWidget::NativeConstruct()
 
 	btn_retry->OnClicked.AddDynamic(this , &UMainWidget::OnRetry);
 	btn_exit->OnClicked.AddDynamic(this , &UMainWidget::OnExit);
+	btn_send->OnClicked.AddDynamic(this , &UMainWidget::OnMySend);
 }
 
 // 플레이어가 태어날 때
@@ -115,8 +120,32 @@ void UMainWidget::NativeTick(const FGeometry& MyGeometry , float InDeltaTime)
 	FString names;
 	for( APlayerState* user : users )
 	{
-		names.Append(FString::Printf(TEXT("%s\n"), *user->GetPlayerName()));
+		names.Append(FString::Printf(TEXT("%s : %d\n"), *user->GetPlayerName(), (int32)user->GetScore()));
 	}
 	// 3. 출력하고싶다.
 	txt_users->SetText(FText::FromString(names));
+}
+
+void UMainWidget::OnMySend()
+{
+	auto* player = Cast<ANetTPSMTVSCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
+	if ( player )
+	{
+		FString msg = edit_input->GetText().ToString();
+		if ( false == msg.IsEmpty() )
+		{
+			player->ServerRPCChat(msg);
+		}
+	}
+}
+
+void UMainWidget::AddChatMessage(const FString& msg)
+{
+	// ChatWidget 를 생성하고
+	auto* chat = CreateWidget<UChatWidget>(this, ChatWidgetFactory);
+	// 그 안에 msg를 반영하고
+	chat->txt_msg->SetText(FText::FromString(msg));
+	// 생성된 ChatWidget을 scroll_msgList에 추가하고싶다.
+	scroll_msgList->AddChild(chat);
+	scroll_msgList->ScrollToEnd();
 }

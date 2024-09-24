@@ -21,6 +21,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Components/HorizontalBox.h"
 #include "NetPlayerController.h"
+#include "NetTPSPlayerState.h"
 
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -301,10 +302,10 @@ void ANetTPSMTVSCharacter::InitMainUI()
 		MainUI = nullptr;
 		return;
 	}
-	
+
 	if ( pc->MainUIWidget )
 	{
-		if ( nullptr == pc->MainUI ) 
+		if ( nullptr == pc->MainUI )
 		{
 			pc->MainUI = CastChecked<UMainWidget>(CreateWidget(GetWorld() , pc->MainUIWidget));
 		}
@@ -506,6 +507,9 @@ void ANetTPSMTVSCharacter::ServerRPCFire_Implementation()
 		if ( otherPlayer )
 		{
 			otherPlayer->DamageProcess();
+			// 점수를 1점 증가 시키고 싶다.
+			auto* ps = Cast<ANetTPSPlayerState>(GetPlayerState());
+			ps->SetScore(ps->GetScore() + 1);
 		}
 	}
 
@@ -553,6 +557,21 @@ void ANetTPSMTVSCharacter::ClientRPCReload_Implementation()
 
 	// 재장전 완료상태 처리
 	IsReloading = false;
+}
+
+void ANetTPSMTVSCharacter::ServerRPCChat_Implementation(const FString& msg)
+{
+	MultiRPCChat(msg);
+}
+
+void ANetTPSMTVSCharacter::MultiRPCChat_Implementation(const FString& msg)
+{
+	// UI의 AddChatMessage를 호출하고싶다.
+	auto* pc = Cast<ANetPlayerController>(GetWorld()->GetFirstPlayerController());
+	if ( pc->MainUI )
+	{
+		pc->MainUI->AddChatMessage(msg);
+	}
 }
 
 void ANetTPSMTVSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
