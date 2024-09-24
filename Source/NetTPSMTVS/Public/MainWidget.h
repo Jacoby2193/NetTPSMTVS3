@@ -70,4 +70,10 @@ public:
 
 	UFUNCTION()
 	void OnExit();
+
+	// 상대방 플레이어들의 이름을 우측에 보이게 하고싶다.
+	UPROPERTY(meta=(BindWidget))
+	class UTextBlock* txt_users;
+
+	virtual void NativeTick(const FGeometry& MyGeometry , float InDeltaTime) override;
 };

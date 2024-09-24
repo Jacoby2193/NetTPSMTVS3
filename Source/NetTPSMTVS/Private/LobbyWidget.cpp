@@ -41,12 +41,28 @@ void ULobbyWidget::OnClickGoMenu()
 
 void ULobbyWidget::MENU_OnClickGoCreateRoom()
 {
+	// MENU_Edit_SessionName의 내용을 UNetTPSGameInstance의 MySessionName 에 반영하고싶다.
+	auto* gi = Cast<UNetTPSGameInstance>(GetWorld()->GetGameInstance());
+	FString newSessionName = MENU_Edit_SessionName->GetText().ToString();
+	if (gi && false == newSessionName.IsEmpty() )
+	{
+		gi->MySessionName = MENU_Edit_SessionName->GetText().ToString();
+	}
 	LobbyWidgetSwitcher->SetActiveWidgetIndex(1);
 }
 
 void ULobbyWidget::MENU_OnClickGoFindSessions()
 {
+	// MENU_Edit_SessionName의 내용을 UNetTPSGameInstance의 MySessionName 에 반영하고싶다.
+	auto* gi = Cast<UNetTPSGameInstance>(GetWorld()->GetGameInstance());
+	FString newSessionName = MENU_Edit_SessionName->GetText().ToString();
+	if ( gi && false == newSessionName.IsEmpty() )
+	{
+		gi->MySessionName = MENU_Edit_SessionName->GetText().ToString();
+	}
 	LobbyWidgetSwitcher->SetActiveWidgetIndex(2);
+
+	FS_OnClickFindSessions();
 }
 
 void ULobbyWidget::CR_OnClickCreateRoom()

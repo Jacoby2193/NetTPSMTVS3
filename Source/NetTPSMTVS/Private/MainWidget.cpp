@@ -8,6 +8,9 @@
 #include "Components/Button.h"
 #include "NetPlayerController.h"
 #include "NetTPSGameInstance.h"
+#include "GameFramework/GameStateBase.h"
+#include "GameFramework/PlayerState.h"
+#include "Components/TextBlock.h"
 
 void UMainWidget::NativeConstruct()
 {
@@ -99,4 +102,21 @@ void UMainWidget::OnExit()
 	{
 		gi->ExitSession();
 	}
+}
+
+void UMainWidget::NativeTick(const FGeometry& MyGeometry , float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	// 1. 다른 플레이어들의 정보를 알고싶다.
+	TArray<TObjectPtr<APlayerState>> users = GetWorld()->GetGameState()->PlayerArray;
+
+	// 2. 플레이어들의 이름을 다 모아서 
+	FString names;
+	for( APlayerState* user : users )
+	{
+		names.Append(FString::Printf(TEXT("%s\n"), *user->GetPlayerName()));
+	}
+	// 3. 출력하고싶다.
+	txt_users->SetText(FText::FromString(names));
 }
