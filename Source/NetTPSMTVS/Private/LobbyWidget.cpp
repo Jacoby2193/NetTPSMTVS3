@@ -19,6 +19,8 @@ void ULobbyWidget::NativeConstruct()
 	auto* gi = Cast<UNetTPSGameInstance>(GetWorld()->GetGameInstance());
 	// OnSearchSignatureCompleteDelegate에 AddSessionSlotWidget을 연결하고싶다.
 	gi->OnSearchSignatureCompleteDelegate.AddDynamic(this , &ULobbyWidget::AddSessionSlotWidget);
+	gi->OnFindSignatureCompleteDelegate.AddDynamic(this , &ULobbyWidget::SetFindActive);
+
 
 	MENU_Button_GoCreateRoom->OnClicked.AddDynamic(this , &ULobbyWidget::MENU_OnClickGoCreateRoom);
 	MENU_Button_GoFindSessions->OnClicked.AddDynamic(this , &ULobbyWidget::MENU_OnClickGoFindSessions);
@@ -26,12 +28,13 @@ void ULobbyWidget::NativeConstruct()
 	CR_Button_GoMenu->OnClicked.AddDynamic(this , &ULobbyWidget::OnClickGoMenu);
 	FS_Button_GoMenu->OnClicked.AddDynamic(this , &ULobbyWidget::OnClickGoMenu);
 
-	CR_Button_CreateRoom->OnClicked.AddDynamic(this, &ULobbyWidget::CR_OnClickCreateRoom);
+	CR_Button_CreateRoom->OnClicked.AddDynamic(this , &ULobbyWidget::CR_OnClickCreateRoom);
 	CR_Slider_PlayerCount->OnValueChanged.AddDynamic(this , &ULobbyWidget::CR_OnChangeSliderPlayerCount);
 
 	FS_Button_FindSessions->OnClicked.AddDynamic(this , &ULobbyWidget::FS_OnClickFindSessions);
 
 	CR_Slider_PlayerCount->SetValue(2);
+	SetFindActive(false);
 }
 
 void ULobbyWidget::OnClickGoMenu()
@@ -44,7 +47,7 @@ void ULobbyWidget::MENU_OnClickGoCreateRoom()
 	// MENU_Edit_SessionName의 내용을 UNetTPSGameInstance의 MySessionName 에 반영하고싶다.
 	auto* gi = Cast<UNetTPSGameInstance>(GetWorld()->GetGameInstance());
 	FString newSessionName = MENU_Edit_SessionName->GetText().ToString();
-	if (gi && false == newSessionName.IsEmpty() )
+	if ( gi && false == newSessionName.IsEmpty() )
 	{
 		gi->MySessionName = MENU_Edit_SessionName->GetText().ToString();
 	}
@@ -72,7 +75,7 @@ void ULobbyWidget::CR_OnClickCreateRoom()
 
 	// roomName이 기재되지 않거나 공백이라면 방생성을 하지 않고싶다.
 	roomName = roomName.TrimStartAndEnd();
-	if (roomName.IsEmpty())
+	if ( roomName.IsEmpty() )
 	{
 		return;
 	}
@@ -104,10 +107,29 @@ void ULobbyWidget::FS_OnClickFindSessions()
 void ULobbyWidget::AddSessionSlotWidget(const struct FRoomInfo& info)
 {
 	// 슬롯을 생성해서 
-	auto* slot = CreateWidget<USessionSlotWidget>(this, SessionSlotWidgetFactory);
+	auto* slot = CreateWidget<USessionSlotWidget>(this , SessionSlotWidgetFactory);
 
 	slot->UpdateInfo(info);
 	// FS_ScrollBox에 추가 하고싶다.
-	
+
 	FS_ScrollBox->AddChild(slot);
+}
+
+void ULobbyWidget::SetFindActive(bool value)
+{
+	// 찾기를 시도하면 Find텍스트를 보이게, 버튼 비활성 하고싶다.
+	// 찾기가 끝나면 Find텍스트 안보이게, 버튼 활성 하고싶다.
+	if ( value )
+	{
+		// 찾기 시도
+		FS_Text_Finding->SetVisibility(ESlateVisibility::Visible);
+		FS_Button_FindSessions->SetIsEnabled(false);
+	}
+	else
+	{
+		// 찾기 끝
+		FS_Text_Finding->SetVisibility(ESlateVisibility::Hidden);
+		FS_Button_FindSessions->SetIsEnabled(true);
+	}
+
 }

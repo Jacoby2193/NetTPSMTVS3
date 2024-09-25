@@ -80,5 +80,13 @@ public:
 
 	UFUNCTION()
 	void AddSessionSlotWidget(const struct FRoomInfo& info);
+
+	// 찾기를 시도하면 Find텍스트를 보이게, 버튼 비활성 하고싶다.
+	// 찾기가 끝나면 Find텍스트 안보이게, 버튼 활성 하고싶다.
+	UPROPERTY(meta=(BindWidget))
+	class UTextBlock* FS_Text_Finding;
+
+	UFUNCTION()
+	void SetFindActive(bool value);
 	
 };

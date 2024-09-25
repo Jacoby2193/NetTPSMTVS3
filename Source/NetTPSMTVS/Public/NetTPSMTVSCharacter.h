@@ -54,6 +54,10 @@ private:
 	UPROPERTY(EditAnywhere , BlueprintReadOnly , Category = Input , meta = (AllowPrivateAccess = "true"))
 	UInputAction* ReloadAction;
 
+	UPROPERTY(EditAnywhere , BlueprintReadOnly , Category = Input , meta = (AllowPrivateAccess = "true"))
+	UInputAction* VoiceChatAction;
+
+
 public:
 	ANetTPSMTVSCharacter();
 
@@ -71,6 +75,9 @@ protected:
 	void FirePistol(const FInputActionValue& Value);
 
 	void ReloadPistol(const FInputActionValue& Value);
+
+	void StartVoiceChat(const FInputActionValue& Value);
+	void CancleVoiceChat(const FInputActionValue& Value);
 
 	void MyTakePistol();
 	void MyReleasePistol();

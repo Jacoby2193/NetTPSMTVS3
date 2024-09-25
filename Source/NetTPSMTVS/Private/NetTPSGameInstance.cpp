@@ -6,6 +6,7 @@
 #include "OnlineSessionSettings.h"
 #include "NetTPSMTVS.h"
 #include "Online/OnlineSessionNames.h"
+#include "string"
 
 void UNetTPSGameInstance::Init()
 {
@@ -62,8 +63,9 @@ void UNetTPSGameInstance::CreateMySession(FString roomName , int32 playerCount)
 	settings.NumPublicConnections = playerCount;
 
 	// 7. 커스텀 정보
-	settings.Set(FName("ROOM_NAME") , roomName , EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-	settings.Set(FName("HOST_NAME") , MySessionName , EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	
+	settings.Set(FName("ROOM_NAME") , StringBase64Encode(roomName) , EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	settings.Set(FName("HOST_NAME") , StringBase64Encode(MySessionName), EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 	FUniqueNetIdPtr netID = GetWorld()->GetFirstLocalPlayerFromController()->GetUniqueNetIdForPlatformUser().GetUniqueNetId();
 
@@ -96,6 +98,11 @@ void UNetTPSGameInstance::FindOtherSessions()
 	SessionSearch->MaxSearchResults = 40;
 
 	SessionInterface->FindSessions(0 , SessionSearch.ToSharedRef());
+	// 찾기 UI를 활성화 하고싶다.
+	if ( OnFindSignatureCompleteDelegate.IsBound())
+	{
+		OnFindSignatureCompleteDelegate.Broadcast(true);
+	}
 }
 
 void UNetTPSGameInstance::OnMyFindSessionsCompleteDelegates(bool bWasSuccessful)
@@ -116,9 +123,13 @@ void UNetTPSGameInstance::OnMyFindSessionsCompleteDelegates(bool bWasSuccessful)
 			roomInfo.index = i;
 
 			// 방이름
-			ret.Session.SessionSettings.Get(FName("ROOM_NAME") , roomInfo.roomName);
+			FString roomName;
+			ret.Session.SessionSettings.Get(FName("ROOM_NAME") , roomName);
+			roomInfo.roomName = StringBase64Decode(roomName);
 			// 호스트이름
-			ret.Session.SessionSettings.Get(FName("HOST_NAME") , roomInfo.hostName);
+			FString hostName;
+			ret.Session.SessionSettings.Get(FName("HOST_NAME") , hostName);
+			roomInfo.hostName = StringBase64Decode(hostName);
 			// 최대 플레이어 수
 			roomInfo.maxPlayerCount = ret.Session.SessionSettings.NumPublicConnections;
 			// 입장한 플레이어 수(최대 - 남은)
@@ -135,6 +146,12 @@ void UNetTPSGameInstance::OnMyFindSessionsCompleteDelegates(bool bWasSuccessful)
 	else
 	{
 		PRINTLOG(TEXT("OnMyFindSessionsCompleteDelegates is Failed!!!"));
+	}
+
+	// 찾기 UI를 비활성화 하고싶다.
+	if ( OnFindSignatureCompleteDelegate.IsBound() )
+	{
+		OnFindSignatureCompleteDelegate.Broadcast(false);
 	}
 }
 
@@ -184,4 +201,24 @@ void UNetTPSGameInstance::OnMyDestroySessionComplete(FName SessionName , bool bW
 		auto* pc = GetWorld()->GetFirstPlayerController();
 		pc->ClientTravel(TEXT("/Game/NetTPS/Maps/LobbyMap"), ETravelType::TRAVEL_Absolute);
 	}
+}
+
+FString UNetTPSGameInstance::StringBase64Encode(const FString& str)
+{
+	// Set 할 때 : FString -> UTF8 (std::string) -> TArray<uint8> -> base64 로 Encode
+	std::string utf8String = TCHAR_TO_UTF8(*str);
+	TArray<uint8> arrayData = TArray<uint8>((uint8*)(utf8String.c_str()) ,
+	utf8String.length());
+	return FBase64::Encode(arrayData);
+
+}
+
+FString UNetTPSGameInstance::StringBase64Decode(const FString& str)
+{
+	// Get 할 때 : base64 로 Decode -> TArray<uint8> -> TCHAR
+	TArray<uint8> arrayData;
+	FBase64::Decode(str , arrayData);
+	std::string ut8String((char*)(arrayData.GetData()) , arrayData.Num());
+	return UTF8_TO_TCHAR(ut8String.c_str());
+
 }

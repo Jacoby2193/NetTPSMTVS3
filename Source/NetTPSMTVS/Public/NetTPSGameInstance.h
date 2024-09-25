@@ -32,6 +32,7 @@ struct FRoomInfo
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSearchSignature , const struct FRoomInfo& , info);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFindSignature , bool, value);
 
 /**
  * 
@@ -63,6 +64,9 @@ public:
 
 	FSearchSignature OnSearchSignatureCompleteDelegate;
 
+	// 찾기를 위한 델리게이트...
+	FFindSignature OnFindSignatureCompleteDelegate;
+
 	// 방입장 요청
 	void JoinSession(int32 index);
 	// 방입장 응답
@@ -81,5 +85,13 @@ public:
 	// 방퇴장 응답
 
 	void OnMyDestroySessionComplete(FName SessionName , bool bWasSuccessful);
+
+	// 스팀으로 한글이름 방을 만들어서 조회하면 한글이 깨지는 이슈발생!!
+	// Base64 인코딩으로 해결하고자함!
+	FString StringBase64Encode(const FString& str);
+
+	FString StringBase64Decode(const FString& str);
+
+
 
 };

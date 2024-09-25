@@ -158,6 +158,11 @@ void ANetTPSMTVSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(FireAction , ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::FirePistol);
 
 		EnhancedInputComponent->BindAction(ReloadAction , ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::ReloadPistol);
+		
+		EnhancedInputComponent->BindAction(VoiceChatAction, ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::StartVoiceChat);
+
+		EnhancedInputComponent->BindAction(VoiceChatAction, ETriggerEvent::Completed
+			, this , &ANetTPSMTVSCharacter::CancleVoiceChat);
 
 	}
 	else
@@ -289,6 +294,16 @@ void ANetTPSMTVSCharacter::ReloadPistol(const FInputActionValue& Value)
 		IsReloading = true;
 		anim->PlayReloadMontage();
 	}
+}
+
+void ANetTPSMTVSCharacter::StartVoiceChat(const FInputActionValue& Value)
+{
+	GetController<ANetPlayerController>()->StartTalking();
+}
+
+void ANetTPSMTVSCharacter::CancleVoiceChat(const FInputActionValue& Value)
+{
+	GetController<ANetPlayerController>()->StopTalking();
 }
 
 void ANetTPSMTVSCharacter::InitMainUI()
