@@ -162,7 +162,7 @@ void ANetTPSMTVSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(VoiceChatAction, ETriggerEvent::Started , this , &ANetTPSMTVSCharacter::StartVoiceChat);
 
 		EnhancedInputComponent->BindAction(VoiceChatAction, ETriggerEvent::Completed
-			, this , &ANetTPSMTVSCharacter::CancleVoiceChat);
+			, this , &ANetTPSMTVSCharacter::CancelVoiceChat);
 
 	}
 	else
@@ -301,7 +301,7 @@ void ANetTPSMTVSCharacter::StartVoiceChat(const FInputActionValue& Value)
 	GetController<ANetPlayerController>()->StartTalking();
 }
 
-void ANetTPSMTVSCharacter::CancleVoiceChat(const FInputActionValue& Value)
+void ANetTPSMTVSCharacter::CancelVoiceChat(const FInputActionValue& Value)
 {
 	GetController<ANetPlayerController>()->StopTalking();
 }

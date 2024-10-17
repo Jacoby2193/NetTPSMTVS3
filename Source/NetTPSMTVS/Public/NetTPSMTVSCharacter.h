@@ -77,7 +77,7 @@ protected:
 	void ReloadPistol(const FInputActionValue& Value);
 
 	void StartVoiceChat(const FInputActionValue& Value);
-	void CancleVoiceChat(const FInputActionValue& Value);
+	void CancelVoiceChat(const FInputActionValue& Value);
 
 	void MyTakePistol();
 	void MyReleasePistol();
