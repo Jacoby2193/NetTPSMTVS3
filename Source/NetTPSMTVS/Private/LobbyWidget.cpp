@@ -35,6 +35,9 @@ void ULobbyWidget::NativeConstruct()
 
 	CR_Slider_PlayerCount->SetValue(2);
 	SetFindActive(false);
+
+	Btn_TypeA->OnClicked.AddDynamic(this, &ULobbyWidget::OnClickTypeA);
+	Btn_TypeB->OnClicked.AddDynamic(this, &ULobbyWidget::OnClickTypeB);
 }
 
 void ULobbyWidget::OnClickGoMenu()
@@ -132,4 +135,16 @@ void ULobbyWidget::SetFindActive(bool value)
 		FS_Button_FindSessions->SetIsEnabled(true);
 	}
 
+}
+
+void ULobbyWidget::OnClickTypeA()
+{
+	auto* gi = Cast<UNetTPSGameInstance>(GetWorld()->GetGameInstance());
+	gi->bTypeA = true;
+}
+
+void ULobbyWidget::OnClickTypeB()
+{
+	auto* gi = Cast<UNetTPSGameInstance>(GetWorld()->GetGameInstance());
+	gi->bTypeA = false;
 }

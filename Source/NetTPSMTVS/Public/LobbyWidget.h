@@ -88,5 +88,18 @@ public:
 
 	UFUNCTION()
 	void SetFindActive(bool value);
+
+	UPROPERTY(meta=(BindWidget))
+	class UButton* Btn_TypeA;
 	
+	UPROPERTY(meta=(BindWidget))
+	class UButton* Btn_TypeB;
+
+	UFUNCTION()
+	void OnClickTypeA();
+
+	UFUNCTION()
+	void OnClickTypeB();
+
+
 };

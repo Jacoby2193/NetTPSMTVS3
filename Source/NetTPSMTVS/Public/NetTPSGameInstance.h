@@ -68,7 +68,7 @@ public:
 	FFindSignature OnFindSignatureCompleteDelegate;
 
 	// 방입장 요청
-	void JoinSession(int32 index);
+	void MyJoinSession(int32 index);
 	// 방입장 응답
 	void OnMyJoinSessionComplete(FName SessionName , EOnJoinSessionCompleteResult::Type EOnJoinSessionCompleteResult);
 
@@ -93,5 +93,6 @@ public:
 	FString StringBase64Decode(const FString& str);
 
 
+	bool bTypeA;
 
 };

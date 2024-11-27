@@ -19,7 +19,7 @@ void USessionSlotWidget::OnClickJoin()
 	auto* gi = Cast<UNetTPSGameInstance>(GetWorld()->GetGameInstance());
 	if ( gi )
 	{
-		gi->JoinSession(SessionSearchIndex);
+		gi->MyJoinSession(SessionSearchIndex);
 	}
 }
 

@@ -155,7 +155,7 @@ void UNetTPSGameInstance::OnMyFindSessionsCompleteDelegates(bool bWasSuccessful)
 	}
 }
 
-void UNetTPSGameInstance::JoinSession(int32 index)
+void UNetTPSGameInstance::MyJoinSession(int32 index)
 {
 	auto result = SessionSearch->SearchResults[index];
 	SessionInterface->JoinSession(0 , FName(MySessionName) , result);

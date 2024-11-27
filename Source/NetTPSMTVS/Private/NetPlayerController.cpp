@@ -4,6 +4,7 @@
 #include "NetPlayerController.h"
 #include "NetTPSMTVSGameMode.h"
 #include "GameFramework/SpectatorPawn.h"
+#include "NetTPSGameInstance.h"
 
 void ANetPlayerController::BeginPlay()
 {
@@ -12,6 +13,12 @@ void ANetPlayerController::BeginPlay()
 	if ( HasAuthority() )
 	{
 		GM = Cast<ANetTPSMTVSGameMode>(GetWorld()->GetAuthGameMode());
+	}
+
+	if (IsLocalController())
+	{
+		auto* gi = Cast<UNetTPSGameInstance>(GetWorld()->GetGameInstance());
+		ServerRPCChangePlayer(gi->bTypeA);
 	}
 }
 
@@ -46,5 +53,20 @@ void ANetPlayerController::ServerRPCChangeToSpectator_Implementation()
 		// 5초 후에 플레이어를 리스폰 하고 싶다.
 		FTimerHandle handle;
 		GetWorldTimerManager().SetTimer(handle , this , &ANetPlayerController::ServerRPCRespawnPlayer_Implementation , 5 , false);
+	}
+}
+
+void ANetPlayerController::ServerRPCChangePlayer_Implementation(bool bTypeA)
+{
+	// TypeA라면 Manny로 교체
+	if ( false == bTypeA )
+	{
+		auto* oldPawn = GetPawn();
+		UnPossess();
+		APawn* newPawn = Cast<APawn>(GetWorld()->SpawnActor(MannyFactory));
+		newPawn->SetActorLocation(oldPawn->GetActorLocation());
+		Possess(newPawn);
+		
+		oldPawn->Destroy();
 	}
 }

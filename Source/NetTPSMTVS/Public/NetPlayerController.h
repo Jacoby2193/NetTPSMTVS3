@@ -35,4 +35,10 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerRPCChangeToSpectator();
 
+	UPROPERTY(EditDefaultsOnly, Category = ChooseCharacter)
+	TSubclassOf<class APawn> MannyFactory;
+	
+	UFUNCTION(Server, Reliable)
+	void ServerRPCChangePlayer(bool bTypeA);
+
 };
