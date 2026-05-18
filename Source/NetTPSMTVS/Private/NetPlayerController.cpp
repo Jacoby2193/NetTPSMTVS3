@@ -24,7 +24,7 @@ void ANetPlayerController::BeginPlay()
 
 void ANetPlayerController::ServerRPCRespawnPlayer_Implementation()
 {
-	auto* player = GetPawn();
+	auto player = GetPawn();
 	UnPossess();
 	if ( player )
 	{
@@ -61,7 +61,7 @@ void ANetPlayerController::ServerRPCChangePlayer_Implementation(bool bTypeA)
 	// TypeA라면 Manny로 교체
 	if ( false == bTypeA )
 	{
-		auto* oldPawn = GetPawn();
+		auto oldPawn = GetPawn();
 		UnPossess();
 		APawn* newPawn = Cast<APawn>(GetWorld()->SpawnActor(MannyFactory));
 		newPawn->SetActorLocation(oldPawn->GetActorLocation());

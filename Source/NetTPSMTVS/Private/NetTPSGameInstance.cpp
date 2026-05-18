@@ -5,14 +5,21 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "NetTPSMTVS.h"
+#include "OnlineSubsystemUtils.h"
 #include "Online/OnlineSessionNames.h"
 #include "string"
 
 void UNetTPSGameInstance::Init()
 {
 	Super::Init();
+	
+	// 방장이 방에서 퇴장하면 ConnectionLost 라는 네트워크 오류가 발생되는데 로비로 튕겨나도록 한다. 
+	if (GEngine)
+	{
+		GEngine->OnNetworkFailure().AddUObject(this, &UNetTPSGameInstance::OnMyNetworkFailure);
+	}
 
-	if ( auto* subSystem = IOnlineSubsystem::Get() )
+	if ( auto* subSystem = Online::GetSubsystem(GetWorld()) )
 	{
 		SessionInterface = subSystem->GetSessionInterface();
 
@@ -46,7 +53,7 @@ void UNetTPSGameInstance::CreateMySession(FString roomName , int32 playerCount)
 	settings.bIsDedicated = false;
 
 	// 2. 랜선(Lan)으로 매치하는가?
-	FName subsysName = IOnlineSubsystem::Get()->GetSubsystemName();
+	FName subsysName = Online::GetSubsystem(GetWorld())->GetSubsystemName();
 	settings.bIsLANMatch = subsysName == "NULL";
 
 	// 3. 매칭이 공개(true)혹은 비공개(false, 초대를 통해서 매칭)
@@ -93,8 +100,8 @@ void UNetTPSGameInstance::FindOtherSessions()
 {
 	SessionSearch = MakeShareable(new FOnlineSessionSearch);
 
-	SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
-	SessionSearch->bIsLanQuery = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL";
+	SessionSearch->QuerySettings.Set(SEARCH_LOBBIES, true, EOnlineComparisonOp::Equals);
+	SessionSearch->bIsLanQuery = Online::GetSubsystem(GetWorld())->GetSubsystemName() == "NULL";
 	SessionSearch->MaxSearchResults = 40;
 
 	SessionInterface->FindSessions(0 , SessionSearch.ToSharedRef());
@@ -179,16 +186,6 @@ void UNetTPSGameInstance::OnMyJoinSessionComplete(FName SessionName , EOnJoinSes
 
 void UNetTPSGameInstance::ExitSession()
 {
-	ServerRPCExitSession();
-}
-
-void UNetTPSGameInstance::ServerRPCExitSession_Implementation()
-{
-	MulticastRPCExitSession();
-}
-
-void UNetTPSGameInstance::MulticastRPCExitSession_Implementation()
-{
 	// 방퇴장 요청
 	SessionInterface->DestroySession(FName(MySessionName));
 }
@@ -200,6 +197,15 @@ void UNetTPSGameInstance::OnMyDestroySessionComplete(FName SessionName , bool bW
 		// 클라이언트가 로비로 여행을 가고싶다.
 		auto* pc = GetWorld()->GetFirstPlayerController();
 		pc->ClientTravel(TEXT("/Game/NetTPS/Maps/LobbyMap"), ETravelType::TRAVEL_Absolute);
+	}
+}
+
+void UNetTPSGameInstance::OnMyNetworkFailure(UWorld* world, UNetDriver* netDriver, ENetworkFailure::Type failType,
+	const FString& erorrMsg)
+{
+	if (failType == ENetworkFailure::ConnectionLost)
+	{
+		ExitSession();
 	}
 }
 

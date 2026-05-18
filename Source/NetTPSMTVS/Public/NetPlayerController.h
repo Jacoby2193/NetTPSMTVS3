@@ -40,5 +40,4 @@ public:
 	
 	UFUNCTION(Server, Reliable)
 	void ServerRPCChangePlayer(bool bTypeA);
-
 };

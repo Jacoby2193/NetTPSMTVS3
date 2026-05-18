@@ -25,7 +25,7 @@ struct FRoomInfo
 
 	int32 index;
 
-	FString ToString()
+	FString ToString() const
 	{
 		return FString::Printf(TEXT("%d)[%s][%s] (%d / %d) -> %dms"), index, *roomName, *hostName, currentPlayerCount, maxPlayerCount, pingMS);
 	}
@@ -72,19 +72,13 @@ public:
 	// 방입장 응답
 	void OnMyJoinSessionComplete(FName SessionName , EOnJoinSessionCompleteResult::Type EOnJoinSessionCompleteResult);
 
-
-
 	// 방퇴장 요청 -> UI에서 호출
 	void ExitSession();
 
-	UFUNCTION(Server, Reliable)
-	void ServerRPCExitSession();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastRPCExitSession();
 	// 방퇴장 응답
-
 	void OnMyDestroySessionComplete(FName SessionName , bool bWasSuccessful);
+	
+	void OnMyNetworkFailure(UWorld* world, UNetDriver* netDriver, ENetworkFailure::Type failType, const FString& erorrMsg);
 
 	// 스팀으로 한글이름 방을 만들어서 조회하면 한글이 깨지는 이슈발생!!
 	// Base64 인코딩으로 해결하고자함!
