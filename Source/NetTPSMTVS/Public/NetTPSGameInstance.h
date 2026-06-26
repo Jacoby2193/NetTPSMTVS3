@@ -44,7 +44,17 @@ class NETTPSMTVS_API UNetTPSGameInstance : public UGameInstance
 
 public:
 	virtual void Init() override;
+	
+	// 게임 인스턴스가 종료될 때 호출됩니다.
+	virtual void Shutdown() override;
 
+	// 델리게이트 해제를 위한 핸들 저장용 변수
+	FDelegateHandle CreateSessionDelegateHandle;
+	FDelegateHandle FindSessionsDelegateHandle;
+	FDelegateHandle JoinSessionDelegateHandle;
+	FDelegateHandle DestroySessionDelegateHandle;
+	FDelegateHandle InviteAcceptedDelegateHandle;
+	
 	// 온라인 세션 인터페이스를 기억하고싶다.
 	IOnlineSessionPtr SessionInterface;
 
@@ -89,4 +99,8 @@ public:
 
 	bool bTypeA;
 
+	// 스팀 오버레이에서 초대 수락 시 호출될 콜백
+	void OnMyInviteAccepted(const bool bWasSuccessful, const int32 ControllerId, TSharedPtr<const FUniqueNetId> UserId, const FOnlineSessionSearchResult& InviteResult);
+
+	
 };
