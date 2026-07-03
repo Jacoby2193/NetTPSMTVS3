@@ -80,7 +80,7 @@ public:
 	// 방입장 요청
 	void MyJoinSession(int32 index);
 	// 방입장 응답
-	void OnMyJoinSessionComplete(FName SessionName , EOnJoinSessionCompleteResult::Type EOnJoinSessionCompleteResult);
+	void OnMyJoinSessionComplete(FName SessionName , EOnJoinSessionCompleteResult::Type Result);
 
 	// 방퇴장 요청 -> UI에서 호출
 	void ExitSession();
