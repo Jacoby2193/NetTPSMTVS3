@@ -89,7 +89,8 @@ void UNetTPSGameInstance::CreateMySession(FString roomName , int32 playerCount)
 
 	// 4. 유저의 상태 정보(온라인/자리비움/등등) 사용 여부
 	settings.bUsesPresence = true;
-
+	settings.bUseLobbiesIfAvailable = true;
+	
 	// 5. 중간에 난입 가능한가?
 	settings.bAllowJoinViaPresence = true;
 	settings.bAllowJoinInProgress = true;
