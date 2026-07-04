@@ -61,7 +61,7 @@ void UNetTPSGameInstance::Shutdown()
 		SessionInterface->OnFindSessionsCompleteDelegates.Remove(FindSessionsDelegateHandle);
 		SessionInterface->OnJoinSessionCompleteDelegates.Remove(JoinSessionDelegateHandle);
 		SessionInterface->OnDestroySessionCompleteDelegates.Remove(DestroySessionDelegateHandle);
-		SessionInterface->OnSessionInviteReceivedDelegates.Remove(InviteAcceptedDelegateHandle);
+		SessionInterface->OnSessionUserInviteAcceptedDelegates.Remove(InviteAcceptedDelegateHandle);
 	}
 
 	// GEngine 네트워크 실패 델리게이트도 제거 (필요시 핸들을 사용하거나 특정 객체 바인딩 전체 제거)
