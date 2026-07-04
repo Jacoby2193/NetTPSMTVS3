@@ -115,8 +115,9 @@ public:
 	class USceneComponent* HandComp;
 
 	// 소유한 총을 기억하고싶다.
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	class AActor* GrabPistolActor;
+	virtual void PostNetInit() override;
 
 	UPROPERTY(EditDefaultsOnly , Category = Pistol)
 	float GrabDistance = 300;

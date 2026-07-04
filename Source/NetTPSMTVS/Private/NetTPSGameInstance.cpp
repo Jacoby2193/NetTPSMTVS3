@@ -89,24 +89,24 @@ void UNetTPSGameInstance::CreateMySession(FString roomName , int32 playerCount)
 
 	// 4. 유저의 상태 정보(온라인/자리비움/등등) 사용 여부
 	settings.bUsesPresence = true;
+	// 5. 로비 활성화
 	settings.bUseLobbiesIfAvailable = true;
 	
-	// 5. 중간에 난입 가능한가?
+	// 6. 중간에 난입 가능한가?
 	settings.bAllowJoinViaPresence = true;
 	settings.bAllowJoinInProgress = true;
 
-	// 6. 최대 인원수
+	// 7. 최대 인원수
 	settings.NumPublicConnections = playerCount;
 
-	// 7. 커스텀 정보
+	// 8. 커스텀 정보
 
 	settings.Set(FName("ROOM_NAME") , StringBase64Encode(roomName) ,
 	             EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 	settings.Set(FName("HOST_NAME") , StringBase64Encode(MySessionName) ,
 	             EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
-	FUniqueNetIdPtr netID = GetWorld()->GetFirstLocalPlayerFromController()->GetUniqueNetIdForPlatformUser().
-	                                    GetUniqueNetId();
+	FUniqueNetIdPtr netID = GetWorld()->GetFirstLocalPlayerFromController()->GetUniqueNetIdForPlatformUser().GetUniqueNetId();
 
 	SessionInterface->CreateSession(*netID , FName(MySessionName) , settings);
 
@@ -323,7 +323,23 @@ void UNetTPSGameInstance::OnMyInviteAccepted(const bool bWasSuccessful , const i
 
 		PRINTLOG(TEXT("스팀 친구 초대를 수락했습니다. 세션에 입장을 시도합니다."));
 
+		const FUniqueNetIdPtr LocalNetId = GetWorld()->GetFirstLocalPlayerFromController()->GetUniqueNetIdForPlatformUser().GetUniqueNetId();
+		if (LocalNetId.IsValid() && InviteResult.Session.OwningUserId.IsValid())
+		{
+			PRINTLOG(TEXT("Invite owner id: %s / local id: %s"),
+				*InviteResult.Session.OwningUserId->ToString(),
+				*LocalNetId->ToString());
+
+			if (*InviteResult.Session.OwningUserId == *LocalNetId)
+			{
+				PRINTLOG(TEXT("초대 세션의 방장이 현재 로컬 유저입니다. 자기 자신에게는 조인하지 않습니다."));
+				return;
+			}
+		}
+		FString roomName;
+		InviteResult.Session.SessionSettings.Get(FName("ROOM_NAME") , roomName);
+		roomName = StringBase64Decode(roomName);
 		// 전달받은 InviteResult(세션 정보)를 사용하여 즉시 조인
-		SessionInterface->JoinSession(ControllerId , FName(MySessionName) , InviteResult);
+		SessionInterface->JoinSession(ControllerId, FName(*roomName), InviteResult);
 	}
 }
