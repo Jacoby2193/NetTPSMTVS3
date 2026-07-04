@@ -18,7 +18,8 @@ public class NetTPSMTVS : ModuleRules
 			"UMG", 
 			"OnlineSubsystem", 
 			"OnlineSubsystemSteam", 
-			"OnlineSubsystemUtils"
+			"OnlineSubsystemUtils",
+			"SteamSockets"
 		});
 
     }

@@ -17,13 +17,13 @@ struct FRoomInfo
 	UPROPERTY(BlueprintReadOnly)
 	FString hostName;
 	UPROPERTY(BlueprintReadOnly)
-	int32 maxPlayerCount;
+	int32 maxPlayerCount = 0;
 	UPROPERTY(BlueprintReadOnly)
-	int32 currentPlayerCount;
+	int32 currentPlayerCount = 0;
 	UPROPERTY(BlueprintReadOnly)
-	int32 pingMS;
+	int32 pingMS = 0;
 
-	int32 index;
+	int32 index = INDEX_NONE;
 
 	FString ToString() const
 	{
